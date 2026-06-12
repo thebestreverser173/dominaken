@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Taj Mod · Live Server Browser & Player Tracker</title>
-    <meta name="description" content="Taj Mod SCP: Secret Laboratory live server browser – view active servers, player counts, official/community tags, and real-time updates.">
+    <meta name="description" content="Taj Mod SCP: Secret Laboratory live server browser – view active servers, player counts, official/community tags, and real-time updates with full Unity Rich Text support.">
     <style>
         * {
             margin: 0;
@@ -24,7 +24,6 @@
             --text-dim: #9a8fb8;
             --danger: #ff4d6d;
             --warn: #ffb14d;
-            --success: #4cff9e;
         }
 
         body {
@@ -36,7 +35,6 @@
             line-height: 1.5;
         }
 
-        /* background glow effect */
         body::before {
             content: '';
             position: fixed;
@@ -47,7 +45,6 @@
             z-index: 0;
         }
 
-        /* modern glass header */
         .header {
             background: rgba(10, 6, 20, 0.7);
             backdrop-filter: blur(16px);
@@ -236,13 +233,20 @@
         }
 
         .server-name {
-            font-weight: 700;
+            font-weight: 600;
             font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            line-height: 1.4;
             word-break: break-word;
+            flex: 1;
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        /* rendered rich text inside server-name keeps all style inheritance */
+        .server-name span, .server-name b, .server-name i, .server-name u {
+            display: inline;
         }
 
         .badge-official {
@@ -253,6 +257,7 @@
             border-radius: 60px;
             font-size: 10px;
             letter-spacing: 0.4px;
+            white-space: nowrap;
         }
 
         .badge-community {
@@ -263,6 +268,7 @@
             font-size: 10px;
             font-weight: 700;
             color: var(--accent-bright);
+            white-space: nowrap;
         }
 
         .card-body {
@@ -483,38 +489,95 @@
 <div id="copyToast" class="toast-msg">✅ Copied connect command</div>
 
 <script>
-    // ------------- CONFIG ------------
-    const API_URL = "https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1";
-    const REQUIRED_VERSION = "1.0.3";
-    let cachedServers = [];
-    let refreshInterval = null;
-    let isFetching = false;
-
-    // Helper: decode server name from base64 and strip unity rich text
-    function decodeAndCleanServerName(encoded) {
+    // ---------- Unity Rich Text to HTML converter (full support for SCP:SL tags) ----------
+    function unityRichTextToHtml(rawText) {
+        if (!rawText) return "Taj Mod Server";
+        
+        // Step 1: encode entities except we'll handle tags after protecting HTML
+        let html = rawText;
+        
+        // Color tags: <color=#RRGGBB> or <color=red/cyan etc> and closing </color>
+        html = html.replace(/<color=([^>]+?)>/gi, (match, colorVal) => {
+            let colorStyle = colorVal.trim();
+            if (colorStyle.startsWith('#')) {
+                // hex color (3/6/8 digit)
+                if (/^#[0-9A-Fa-f]{6}$/.test(colorStyle)) return `<span style="color: ${colorStyle};">`;
+                if (/^#[0-9A-Fa-f]{3}$/.test(colorStyle)) return `<span style="color: ${colorStyle};">`;
+                return `<span style="color: ${colorStyle};">`;
+            } else {
+                // try named colors for fallback
+                const colorMap = { red: '#ff4d4d', green: '#4cff9e', blue: '#4d9eff', yellow: '#ffd966', white: '#ffffff', black: '#000000', cyan: '#00ffff', magenta: '#ff44ff' };
+                const lower = colorStyle.toLowerCase();
+                if (colorMap[lower]) return `<span style="color: ${colorMap[lower]};">`;
+                return `<span style="color: ${colorStyle};">`;
+            }
+        });
+        html = html.replace(/<\/color>/gi, '</span>');
+        
+        // Size tags: <size=XX> ... </size>
+        html = html.replace(/<size=(\d+)(?:%?)\s*>/gi, (match, sizeNum) => {
+            let pxSize = Math.min(32, Math.max(11, parseInt(sizeNum) || 14));
+            return `<span style="font-size: ${pxSize}px; display: inline-block;">`;
+        });
+        html = html.replace(/<\/size>/gi, '</span>');
+        
+        // Bold, Italic, Underline (standard SL tags)
+        html = html.replace(/<b>/gi, '<strong>').replace(/<\/b>/gi, '</strong>');
+        html = html.replace(/<i>/gi, '<em>').replace(/<\/i>/gi, '</em>');
+        html = html.replace(/<u>/gi, '<u>').replace(/<\/u>/gi, '</u>');
+        
+        // Also handle lowercase <i> <b> <u> already covered but ensure case-insensitive
+        html = html.replace(/<B>/gi, '<strong>').replace(/<\/B>/gi, '</strong>');
+        html = html.replace(/<I>/gi, '<em>').replace(/<\/I>/gi, '</em>');
+        html = html.replace(/<U>/gi, '<u>').replace(/<\/U>/gi, '</u>');
+        
+        // Remove any other known leftover Unity markup like <smallcaps>, <align>, <quad>, but keep content
+        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent)[^>]*>/gi, '');
+        
+        // Clean extra spacing and fix nesting issues
+        html = html.replace(/\s+<span/g, ' <span');
+        
+        // Escape any remaining < or > that are not already valid tags? but we want to keep valid HTML, no raw angle brackets break layout
+        // Safety: prevent XSS by sanitizing anything that could be script
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        // Strip any script or event handlers recursively (just in case)
+        const allElements = tempDiv.querySelectorAll('*');
+        for (let el of allElements) {
+            const attrs = el.attributes;
+            for (let attr of attrs) {
+                if (attr.name.toLowerCase().startsWith('on')) {
+                    el.removeAttribute(attr.name);
+                }
+                if (attr.name === 'href' && attr.value.toLowerCase().startsWith('javascript:')) {
+                    el.removeAttribute('href');
+                }
+            }
+        }
+        let cleaned = tempDiv.innerHTML;
+        if (!cleaned.trim()) cleaned = "Taj Mod Server";
+        
+        // trim long names visually but keep all html structure
+        if (cleaned.length > 110) {
+            let shortHtml = cleaned.slice(0, 100);
+            let lastTagOpen = shortHtml.lastIndexOf('<');
+            if (lastTagOpen > 60) shortHtml = shortHtml.slice(0, lastTagOpen);
+            cleaned = shortHtml + '…';
+        }
+        return cleaned;
+    }
+    
+    // decode server name from base64 and apply unity rich text conversion
+    function decodeAndRenderServerName(encoded) {
         if (!encoded) return "Taj Mod Server";
         try {
             let decoded = atob(encoded);
-            // strip all known rich text tags, keep readable text
-            decoded = decoded
-                .replace(/<size[^>]*>/gi, '')
-                .replace(/<\/size>/gi, '')
-                .replace(/<smallcaps>/gi, '')
-                .replace(/<\/smallcaps>/gi, '')
-                .replace(/<b>/gi, '')
-                .replace(/<\/b>/gi, '')
-                .replace(/<i>/gi, '')
-                .replace(/<\/i>/gi, '')
-                .replace(/<u>/gi, '')
-                .replace(/<\/u>/gi, '')
-                .replace(/<color=[^>]+>/gi, '')
-                .replace(/<\/color>/gi, '')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .trim();
-            if (!decoded || decoded.length === 0) return "Taj Mod Server";
-            return decoded;
+            // clean extra layer of (sometimes includes extra garbage) but preserve tags
+            // also remove any null characters
+            decoded = decoded.replace(/\0/g, '');
+            if (!decoded.trim()) return "Taj Mod Server";
+            const rendered = unityRichTextToHtml(decoded);
+            return rendered;
         } catch(e) {
             return "Taj Mod Server";
         }
@@ -531,7 +594,6 @@
         return { current: 0, max: 64 };
     }
 
-    // get flag based on IP prefix (cosmetic)
     function getFlagByIp(ip) {
         if (!ip) return '🌍';
         if (ip.startsWith('51.75') || ip.startsWith('57.128') || ip.startsWith('89.144') || ip.startsWith('83.168')) return '🇪🇺';
@@ -541,40 +603,20 @@
         return '🌐';
     }
 
-    // Rich text to safe HTML with limited styling (color spans, bold, italic)
-    function richToHtmlSafe(raw) {
-        if (!raw) return '';
-        let escaped = raw
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '\uE000')
-            .replace(/>/g, '\uE001');
-        escaped = escaped.replace(/\uE000color=([a-zA-Z0-9#]+)\uE001/gi, '<span style="color:$1">');
-        escaped = escaped.replace(/\uE000\/color\uE001/gi, '</span>');
-        escaped = escaped.replace(/\uE000(\/?)b\uE001/gi, '<$1b>');
-        escaped = escaped.replace(/\uE000(\/?)i\uE001/gi, '<$1i>');
-        escaped = escaped.replace(/\uE000(\/?)u\uE001/gi, '<$1u>');
-        escaped = escaped.replace(/\uE000\/?[a-z]+=[^\uE001]*\uE001/gi, '');
-        escaped = escaped.replace(/\uE000/g, '&lt;').replace(/\uE001/g, '&gt;');
-        if (escaped.length > 80) {
-            let short = escaped.substring(0, 77);
-            let lastTag = short.lastIndexOf('<');
-            if (lastTag > 60) short = short.substring(0, lastTag);
-            escaped = short + '…';
-        }
-        return escaped;
-    }
-
-    // generate server card HTML
+    let cachedServers = [];
+    let refreshInterval = null;
+    let isFetching = false;
+    
     function renderServerCards(servers) {
         const container = document.getElementById('serversGrid');
         if (!servers.length) {
             container.innerHTML = `<div class="loading-placeholder" style="color:var(--text-dim);">🔍 No servers match your filters. Try adjusting search or wait for refresh.</div>`;
             return;
         }
-
+        
         let html = '';
         servers.forEach((server, idx) => {
-            const decodedName = decodeAndCleanServerName(server.info);
+            const richNameHtml = decodeAndRenderServerName(server.info);
             const players = parsePlayerCount(server.players);
             const percent = Math.min(100, (players.current / players.max) * 100);
             const isOfficial = server.officialCode > 0;
@@ -584,24 +626,20 @@
             if (players.current === 0) { statusColor = '#6b6580'; statusLabel = 'Empty'; }
             else if (percent >= 90) { statusColor = '#ff4d6d'; statusLabel = 'Full'; }
             else if (percent >= 55) { statusColor = '#ffb14d'; statusLabel = 'Busy'; }
-
-            const versionDisplay = server.version || REQUIRED_VERSION;
+            
+            const versionDisplay = server.version || "1.0.3";
             const connectCmd = `connect ${server.ip}:${server.port}`;
             const displayMap = server.map && server.map !== "Unknown" ? server.map : "Surface/Lobby";
             const friendlyFireActive = !!server.friendlyFire;
             const whitelist = !!server.whitelist;
             const modded = !!server.modded;
-
-            // colorised name with inline rich text (light)
-            let nameHtml = richToHtmlSafe(decodedName);
-            if (!nameHtml) nameHtml = "Taj Mod Server";
-
+            
             html += `
                 <div class="server-card" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
                     <div class="card-header">
                         <div class="server-name">
-                            <span>${flag}</span>
-                            <span style="font-weight:600;">${nameHtml}</span>
+                            <span style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap;">${flag}</span>
+                            <span style="display:inline;">${richNameHtml}</span>
                         </div>
                         ${isOfficial ? '<span class="badge-official">👑 OFFICIAL</span>' : '<span class="badge-community">🏠 COMMUNITY</span>'}
                     </div>
@@ -624,14 +662,14 @@
                         </div>
                         <div class="connect-line">
                             <span style="font-family: monospace;">🔗 ${server.ip}:${server.port}</span>
-                            <button class="copy-command" data-connect="${connectCmd}">📋 Copy connect</button>
+                            <button class="copy-command" data-connect="${connectCmd.replace(/"/g, '&quot;')}">📋 Copy connect</button>
                         </div>
                     </div>
                 </div>
             `;
         });
         container.innerHTML = html;
-
+        
         // attach copy events
         document.querySelectorAll('.copy-command').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -644,15 +682,14 @@
             });
         });
     }
-
+    
     function showToastMessage(msg) {
         const toast = document.getElementById('copyToast');
         toast.textContent = msg || "✅ Copied!";
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 2200);
     }
-
-    // update stats counters
+    
     function updateGlobalStats(servers) {
         let totalPlayers = 0;
         let officialCount = 0;
@@ -665,39 +702,30 @@
         document.getElementById('totalServersLive').innerText = servers.length;
         document.getElementById('officialCountLive').innerText = officialCount;
     }
-
-    // filter servers based on UI controls
+    
     function getFilteredServers() {
         const searchTerm = document.getElementById('searchQuery').value.toLowerCase().trim();
         const typeVal = document.getElementById('typeSelect').value;
         const ffVal = document.getElementById('ffSelect').value;
-
-        let filtered = cachedServers.filter(server => {
-            // version filter only version >= 1.0.3? api already has latest but we keep only required version for display
-            if (server.version && server.version !== REQUIRED_VERSION && !server.version.startsWith(REQUIRED_VERSION)) {
-                // we still show but highlight? keep for consistency because some are different versions but show anyway
-            }
-            const serverNameClean = decodeAndCleanServerName(server.info).toLowerCase();
-            if (searchTerm && !serverNameClean.includes(searchTerm)) return false;
-
+        
+        return cachedServers.filter(server => {
+            const rawName = server.info ? (() => { try { return atob(server.info); } catch(e){ return ""; } })() : "";
+            const plainTextName = rawName.replace(/<[^>]*>/g, '').toLowerCase();
+            if (searchTerm && !plainTextName.includes(searchTerm)) return false;
             if (typeVal === 'official' && server.officialCode === 0) return false;
             if (typeVal === 'community' && server.officialCode > 0) return false;
-
             if (ffVal === 'yes' && !server.friendlyFire) return false;
             if (ffVal === 'no' && server.friendlyFire) return false;
             return true;
         });
-        return filtered;
     }
-
-    // apply filters and re-render
+    
     function applyFiltersAndRender() {
         const filtered = getFilteredServers();
         renderServerCards(filtered);
         updateGlobalStats(cachedServers);
     }
-
-    // fetch servers from API endpoint
+    
     async function fetchServerList() {
         if (isFetching) return;
         isFetching = true;
@@ -705,69 +733,51 @@
         container.innerHTML = `<div class="loading-placeholder"><div class="spinner"></div>Fetching live servers from Taj network...</div>`;
         
         try {
-            const response = await fetch(API_URL);
+            const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1');
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             let rawServers = data.servers || [];
-            // filter servers that match minimum version (1.0.3 or newer)
-            cachedServers = rawServers.filter(srv => {
-                const ver = srv.version || '';
-                if (ver === REQUIRED_VERSION) return true;
-                if (ver.startsWith(REQUIRED_VERSION)) return true;
-                // also allow 1.0.3-patch style
-                if (ver.includes(REQUIRED_VERSION)) return true;
-                // we keep any version as API may have minor but we show only stable ones
-                return true; 
+            cachedServers = rawServers.filter(s => {
+                const ver = s.version || '';
+                return ver.includes("1.0.3") || ver === "1.0.3" || ver.startsWith("1.0.3") || (s.officialCode > 0);
             });
+            if (cachedServers.length === 0 && rawServers.length) cachedServers = rawServers;
             updateGlobalStats(cachedServers);
             applyFiltersAndRender();
             const now = new Date();
             document.getElementById('timestampFooter').innerHTML = `🕐 Last updated: ${now.toLocaleTimeString()} · Auto-refresh every 30s`;
         } catch (err) {
-            console.error("Fetch error", err);
+            console.error(err);
             container.innerHTML = `<div class="error-placeholder" style="color: #ff9090;">❌ Failed to load server list: ${err.message}<br><br>🔄 Check connection or try again later.</div>`;
         } finally {
             isFetching = false;
         }
     }
-
-    // manual refresh handler
+    
     function manualRefresh() {
         fetchServerList();
     }
-
-    // debounced search handler
+    
     let debounceTimer;
     function handleSearch() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            applyFiltersAndRender();
-        }, 220);
+        debounceTimer = setTimeout(() => applyFiltersAndRender(), 200);
     }
-
-    // event listeners
+    
     function bindEvents() {
-        const searchInput = document.getElementById('searchQuery');
-        const typeSelect = document.getElementById('typeSelect');
-        const ffSelect = document.getElementById('ffSelect');
-        const refreshBtn = document.getElementById('manualRefreshBtn');
-        
-        searchInput.addEventListener('input', handleSearch);
-        typeSelect.addEventListener('change', () => applyFiltersAndRender());
-        ffSelect.addEventListener('change', () => applyFiltersAndRender());
-        refreshBtn.addEventListener('click', () => manualRefresh());
+        document.getElementById('searchQuery').addEventListener('input', handleSearch);
+        document.getElementById('typeSelect').addEventListener('change', () => applyFiltersAndRender());
+        document.getElementById('ffSelect').addEventListener('change', () => applyFiltersAndRender());
+        document.getElementById('manualRefreshBtn').addEventListener('click', () => manualRefresh());
     }
-
-    // start periodic refresh
+    
     function init() {
         bindEvents();
         fetchServerList();
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => {
-            fetchServerList();
-        }, 30000);
+        refreshInterval = setInterval(() => fetchServerList(), 30000);
     }
-
+    
     init();
 </script>
 </body>
