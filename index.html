@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taj Mod | Live Server List & Player Tracker</title>
-    <meta name="description" content="Taj Mod SCP: Secret Laboratory live server browser - view all active servers, player counts, and server details">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Taj Mod · Live Server Browser & Player Tracker</title>
+    <meta name="description" content="Taj Mod SCP: Secret Laboratory live server browser – view active servers, player counts, official/community tags, and real-time updates.">
     <style>
         * {
             margin: 0;
@@ -19,48 +19,45 @@
             --bg-deep: #07050d;
             --bg-mid: #0f0a1f;
             --panel: rgba(255, 255, 255, 0.03);
-            --panel-border: rgba(177, 75, 255, 0.18);
+            --panel-border: rgba(177, 75, 255, 0.2);
             --text-main: #f0e9ff;
             --text-dim: #9a8fb8;
             --danger: #ff4d6d;
             --warn: #ffb14d;
-        }
-
-        html {
-            scroll-behavior: smooth;
+            --success: #4cff9e;
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
             background: radial-gradient(circle at 20% 0%, #2a0e4d 0%, var(--bg-mid) 35%, var(--bg-deep) 100%);
             background-attachment: fixed;
             min-height: 100vh;
             color: var(--text-main);
-            position: relative;
-            overflow-x: hidden;
+            line-height: 1.5;
         }
 
+        /* background glow effect */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background-image:
-                radial-gradient(circle at 80% 10%, rgba(177, 75, 255, 0.12) 0%, transparent 40%),
-                radial-gradient(circle at 10% 90%, rgba(138, 43, 226, 0.1) 0%, transparent 40%);
+            background-image: radial-gradient(circle at 80% 10%, rgba(177, 75, 255, 0.12) 0%, transparent 40%),
+                              radial-gradient(circle at 10% 90%, rgba(138, 43, 226, 0.1) 0%, transparent 45%);
             pointer-events: none;
             z-index: 0;
         }
 
+        /* modern glass header */
         .header {
-            background: rgba(10, 6, 20, 0.75);
+            background: rgba(10, 6, 20, 0.7);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--panel-border);
-            box-shadow: 0 4px 30px rgba(177, 75, 255, 0.08);
-            padding: 20px 30px;
+            box-shadow: 0 8px 32px rgba(177, 75, 255, 0.08);
             position: sticky;
             top: 0;
             z-index: 100;
+            padding: 18px 28px;
         }
 
         .header-content {
@@ -70,788 +67,708 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 15px;
-            position: relative;
-            z-index: 1;
+            gap: 18px;
         }
 
-        .logo {
+        .logo-area {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
         }
 
         .logo-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(145deg, var(--accent), var(--accent-dim));
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 0 20px rgba(177, 75, 255, 0.5);
-            flex-shrink: 0;
+            font-size: 28px;
+            box-shadow: 0 8px 20px rgba(177, 75, 255, 0.5);
         }
 
-        .logo h1 {
-            background: linear-gradient(135deg, #fff 0%, var(--accent-bright) 100%);
+        .logo-text h1 {
+            background: linear-gradient(135deg, #ffffff, var(--accent-bright));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .logo-text p {
+            font-size: 12px;
+            color: var(--text-dim);
             letter-spacing: 0.5px;
         }
 
-        .logo p {
-            font-size: 12px;
-            color: var(--text-dim);
-            margin-top: 4px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .stats-container {
+        .stats-panel {
             display: flex;
-            gap: 14px;
+            gap: 20px;
             background: var(--panel);
-            backdrop-filter: blur(10px);
-            padding: 12px 22px;
-            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 10px 24px;
+            border-radius: 40px;
             border: 1px solid var(--panel-border);
         }
 
-        .stat {
+        .stat-item {
             text-align: center;
-            min-width: 70px;
-            position: relative;
         }
 
-        .stat:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            right: -7px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 60%;
-            width: 1px;
-            background: var(--panel-border);
-        }
-
-        .stat-value {
-            font-size: 26px;
+        .stat-number {
+            font-size: 28px;
             font-weight: 800;
             background: linear-gradient(135deg, var(--accent-bright), var(--accent));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1.2;
         }
 
         .stat-label {
-            font-size: 10px;
-            color: var(--text-dim);
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 2px;
+            color: var(--text-dim);
+            font-weight: 500;
         }
 
         .refresh-btn {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
-            color: #fff;
+            background: linear-gradient(105deg, var(--accent), var(--accent-dim));
             border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
+            padding: 12px 28px;
+            border-radius: 40px;
             font-weight: 700;
             font-size: 14px;
+            color: white;
             cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 18px rgba(177, 75, 255, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 5px 18px rgba(177, 75, 255, 0.4);
         }
 
         .refresh-btn:hover {
-            transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 6px 24px rgba(177, 75, 255, 0.55);
-            filter: brightness(1.1);
-        }
-
-        .refresh-btn:active {
-            transform: translateY(0) scale(0.98);
-        }
-
-        .refresh-icon {
-            display: inline-block;
-            transition: transform 0.4s ease;
-        }
-
-        .refresh-btn:hover .refresh-icon {
-            transform: rotate(180deg);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(177, 75, 255, 0.6);
+            filter: brightness(1.05);
         }
 
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 30px;
+            padding: 32px 28px;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
-        .filters {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 28px;
+        .filters-bar {
             background: var(--panel);
-            backdrop-filter: blur(10px);
-            padding: 18px 22px;
-            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 16px 24px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
             border: 1px solid var(--panel-border);
         }
 
-        .filter-input {
+        .filter-input, .filter-select {
             background: rgba(20, 12, 36, 0.7);
             border: 1px solid var(--panel-border);
-            color: #fff;
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 12px 18px;
+            border-radius: 40px;
+            color: white;
+            font-size: 14px;
             flex: 1;
             min-width: 160px;
             cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
-        .filter-input::placeholder {
-            color: var(--text-dim);
-        }
-
-        .filter-input:focus, .filter-input:hover {
+        .filter-input:focus, .filter-select:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(177, 75, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(177, 75, 255, 0.2);
         }
 
         .servers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 22px;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
         }
 
         .server-card {
-            background: linear-gradient(160deg, rgba(40, 20, 70, 0.45) 0%, rgba(15, 10, 28, 0.7) 100%);
-            backdrop-filter: blur(8px);
-            border-radius: 18px;
-            overflow: hidden;
-            transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background: linear-gradient(145deg, rgba(30, 18, 55, 0.6), rgba(12, 8, 24, 0.8));
+            backdrop-filter: blur(6px);
+            border-radius: 28px;
             border: 1px solid var(--panel-border);
-            position: relative;
-            animation: cardIn 0.5s ease both;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            overflow: hidden;
+            animation: fadeUp 0.5s ease forwards;
+            opacity: 0;
         }
 
-        @keyframes cardIn {
-            from { opacity: 0; transform: translateY(14px); }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .server-card:hover {
             transform: translateY(-6px);
             border-color: var(--accent);
-            box-shadow: 0 16px 40px rgba(177, 75, 255, 0.22);
+            box-shadow: 0 20px 40px rgba(177, 75, 255, 0.25);
         }
 
-        .server-header {
-            background: rgba(0, 0, 0, 0.25);
-            padding: 16px 20px;
+        .card-header {
+            padding: 18px 20px;
+            background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid var(--panel-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .server-name {
             font-weight: 700;
-            font-size: 16px;
-            color: #fff;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
             word-break: break-word;
-            flex: 1;
         }
 
-        .official-badge {
+        .badge-official {
             background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-            color: #1a0a2e;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 10px;
+            color: #110022;
             font-weight: 800;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
-            box-shadow: 0 0 12px rgba(177, 75, 255, 0.4);
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 10px;
+            letter-spacing: 0.4px;
         }
 
-        .community-badge {
-            background: rgba(177, 75, 255, 0.12);
+        .badge-community {
+            background: rgba(177, 75, 255, 0.15);
+            border: 1px solid rgba(177, 75, 255, 0.4);
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 10px;
+            font-weight: 700;
             color: var(--accent-bright);
-            border: 1px solid rgba(177, 75, 255, 0.3);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 800;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
         }
 
-        .server-body {
+        .card-body {
             padding: 18px 20px;
         }
 
-        .player-info {
+        .player-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
+            align-items: baseline;
+            margin-bottom: 12px;
         }
 
         .player-count {
-            font-size: 26px;
+            font-size: 32px;
             font-weight: 800;
         }
 
-        .player-count .max {
+        .player-count span {
+            font-size: 18px;
+            font-weight: 500;
             color: var(--text-dim);
-            font-size: 17px;
-            font-weight: 600;
         }
 
-        .status-pill {
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 12px;
             font-weight: 700;
             padding: 5px 12px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            border-radius: 60px;
+            background: rgba(0,0,0,0.3);
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .dot {
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             display: inline-block;
-            box-shadow: 0 0 8px currentColor;
+            box-shadow: 0 0 6px currentColor;
         }
 
-        .progress-bar {
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 10px;
+        .progress-container {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
             height: 8px;
+            margin: 14px 0;
             overflow: hidden;
-            margin-bottom: 16px;
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 10px;
-            transition: width 0.6s ease;
-            box-shadow: 0 0 10px currentColor;
+            border-radius: 12px;
+            transition: width 0.4s ease;
         }
 
-        .server-details {
+        .meta-grid {
             display: flex;
-            gap: 14px;
             flex-wrap: wrap;
-            font-size: 11px;
+            gap: 16px;
+            margin: 16px 0 12px;
+            font-size: 12px;
             color: var(--text-dim);
-            margin-top: 14px;
-            padding-top: 14px;
             border-top: 1px solid var(--panel-border);
+            padding-top: 14px;
         }
 
-        .detail-item {
+        .meta-item {
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        .detail-item strong {
-            color: var(--accent-bright);
-            font-weight: 700;
-        }
-
-        .loading, .error {
-            text-align: center;
-            padding: 70px 30px;
-            font-size: 18px;
-            color: var(--text-dim);
-            grid-column: 1 / -1;
-        }
-
-        .loading {
+        .connect-line {
+            background: rgba(0,0,0,0.45);
+            border-radius: 60px;
+            padding: 8px 14px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            margin-top: 12px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .copy-command {
+            background: var(--accent);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .copy-command:hover {
+            background: var(--accent-bright);
+            transform: scale(1.02);
+        }
+
+        .loading-placeholder, .error-placeholder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 70px 20px;
+            background: var(--panel);
+            border-radius: 48px;
         }
 
         .spinner {
-            width: 38px;
-            height: 38px;
-            border: 3px solid rgba(177, 75, 255, 0.2);
+            width: 42px;
+            height: 42px;
+            border: 3px solid rgba(177,75,255,0.2);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error {
-            color: var(--danger);
-            background: rgba(255, 77, 109, 0.08);
-            border: 1px solid rgba(255, 77, 109, 0.25);
-            border-radius: 16px;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .footer {
             text-align: center;
             padding: 36px 20px;
             color: var(--text-dim);
             border-top: 1px solid var(--panel-border);
-            margin-top: 50px;
-            position: relative;
-            z-index: 1;
-            font-size: 13px;
-        }
-
-        .footer p:first-child {
-            margin-bottom: 6px;
-        }
-
-        .last-update {
-            text-align: center;
+            margin-top: 40px;
             font-size: 12px;
-            color: var(--text-dim);
-            margin-top: 24px;
         }
 
-        .connection-details {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--panel-border);
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-top: 14px;
-            font-size: 12px;
-            font-family: 'Roboto Mono', 'Courier New', monospace;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .connection-details span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .copy-btn {
-            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-            border: none;
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 700;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-
-        .copy-btn:hover {
-            filter: brightness(1.15);
-            transform: scale(1.04);
-        }
-
-        .toast {
+        .toast-msg {
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
             background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 8px 30px rgba(177, 75, 255, 0.4);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 600;
             opacity: 0;
+            transition: opacity 0.25s, transform 0.25s;
             pointer-events: none;
-            transition: all 0.3s ease;
             z-index: 1000;
+            font-size: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
 
-        .toast.show {
+        .toast-msg.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 780px) {
             .servers-grid {
                 grid-template-columns: 1fr;
             }
-            .stats-container {
+            .stats-panel {
                 width: 100%;
                 justify-content: space-around;
             }
             .header-content {
                 flex-direction: column;
-                align-items: stretch;
-            }
-            .refresh-btn {
-                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">
-                <div class="logo-icon">🎮</div>
-                <div>
-                    <h1>Taj Mod Server Browser</h1>
-                    <p>SCP: Secret Laboratory — Live Server List</p>
-                </div>
+
+<div class="header">
+    <div class="header-content">
+        <div class="logo-area">
+            <div class="logo-icon">🎮</div>
+            <div class="logo-text">
+                <h1>Taj Mod Server Browser</h1>
+                <p>SCP: Secret Laboratory — Live Server List</p>
             </div>
-            <div class="stats-container">
-                <div class="stat">
-                    <div class="stat-value" id="totalPlayers">0</div>
-                    <div class="stat-label">Players</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="totalServers">0</div>
-                    <div class="stat-label">Servers</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="officialServers">0</div>
-                    <div class="stat-label">Official</div>
-                </div>
-            </div>
-            <button class="refresh-btn" onclick="fetchServers()"><span class="refresh-icon">⟳</span> Refresh</button>
         </div>
+        <div class="stats-panel">
+            <div class="stat-item"><div class="stat-number" id="totalPlayersLive">0</div><div class="stat-label">Players</div></div>
+            <div class="stat-item"><div class="stat-number" id="totalServersLive">0</div><div class="stat-label">Servers</div></div>
+            <div class="stat-item"><div class="stat-number" id="officialCountLive">0</div><div class="stat-label">Official</div></div>
+        </div>
+        <button class="refresh-btn" id="manualRefreshBtn">⟳ Refresh Now</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="filters-bar">
+        <input type="text" id="searchQuery" class="filter-input" placeholder="🔍 Filter by server name...">
+        <select id="typeSelect" class="filter-select">
+            <option value="all">🎮 All Servers</option>
+            <option value="official">👑 Official Only</option>
+            <option value="community">🏠 Community Only</option>
+        </select>
+        <select id="ffSelect" class="filter-select">
+            <option value="all">⚔️ Friendly Fire (Any)</option>
+            <option value="yes">✅ Friendly Fire ON</option>
+            <option value="no">❌ Friendly Fire OFF</option>
+        </select>
     </div>
 
-    <div class="container">
-        <div class="filters">
-            <input type="text" class="filter-input" id="searchInput" placeholder="🔍 Search server name..." onkeyup="filterServers()">
-            <select class="filter-input" id="typeFilter" onchange="filterServers()">
-                <option value="all">🎮 All Servers</option>
-                <option value="official">👑 Official Only</option>
-                <option value="community">🏠 Community Only</option>
-            </select>
-            <select class="filter-input" id="ffFilter" onchange="filterServers()">
-                <option value="all">⚔️ All (Friendly Fire)</option>
-                <option value="yes">✅ Friendly Fire ON</option>
-                <option value="no">❌ Friendly Fire OFF</option>
-            </select>
-        </div>
-
-        <div id="serversContainer" class="servers-grid">
-            <div class="loading"><div class="spinner"></div>Loading server data from Taj Mod API...</div>
-        </div>
-        <div class="last-update" id="lastUpdate">Last update: --</div>
+    <div id="serversGrid" class="servers-grid">
+        <div class="loading-placeholder"><div class="spinner"></div>Loading live server data from Taj Mod API...</div>
     </div>
+    <div class="last-update" style="text-align:center; margin-top: 24px; font-size:12px; color:var(--text-dim)" id="timestampFooter">Last update: --</div>
+</div>
 
-    <div class="footer">
-        <p>📊 Data fetched from official Taj Mod API · Refreshes every 30 seconds</p>
-        <p style="font-size: 11px;">© 2026 Taj Mod Community · Not affiliated with Northwood Studios</p>
-    </div>
+<div class="footer">
+    <p>📊 Data fetched from official Taj Mod API · Auto-refresh every 30 seconds</p>
+    <p style="margin-top: 6px;">© 2026 Taj Mod Community · Not affiliated with Northwood Studios</p>
+</div>
 
-    <div class="toast" id="toast"></div>
+<div id="copyToast" class="toast-msg">✅ Copied connect command</div>
 
-    <script>
-        let allServers = [];
+<script>
+    // ------------- CONFIG ------------
+    const API_URL = "https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1";
+    const REQUIRED_VERSION = "1.0.3";
+    let cachedServers = [];
+    let refreshInterval = null;
+    let isFetching = false;
 
-        function decodeServerName(encoded) {
-            if (!encoded) return "Taj Mod Server";
-            try {
-                let decoded = atob(encoded);
-                decoded = decoded
-                    .replace(/<size[^>]*>/gi, '')
-                    .replace(/<\/size>/gi, '')
-                    .replace(/<smallcaps>/gi, '')
-                    .replace(/<\/smallcaps>/gi, '')
-                    .replace(/<b>/gi, '')
-                    .replace(/<\/b>/gi, '')
-                    .replace(/<i>/gi, '')
-                    .replace(/<\/i>/gi, '')
-                    .replace(/<u>/gi, '')
-                    .replace(/<\/u>/gi, '');
-                decoded = decoded.replace(/&amp;/g, '&');
-                decoded = decoded.replace(/&lt;/g, '<');
-                decoded = decoded.replace(/&gt;/g, '>');
-                return decoded.trim() || "Taj Mod Server";
-            } catch (e) {
-                return "Taj Mod Server";
-            }
+    // Helper: decode server name from base64 and strip unity rich text
+    function decodeAndCleanServerName(encoded) {
+        if (!encoded) return "Taj Mod Server";
+        try {
+            let decoded = atob(encoded);
+            // strip all known rich text tags, keep readable text
+            decoded = decoded
+                .replace(/<size[^>]*>/gi, '')
+                .replace(/<\/size>/gi, '')
+                .replace(/<smallcaps>/gi, '')
+                .replace(/<\/smallcaps>/gi, '')
+                .replace(/<b>/gi, '')
+                .replace(/<\/b>/gi, '')
+                .replace(/<i>/gi, '')
+                .replace(/<\/i>/gi, '')
+                .replace(/<u>/gi, '')
+                .replace(/<\/u>/gi, '')
+                .replace(/<color=[^>]+>/gi, '')
+                .replace(/<\/color>/gi, '')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .trim();
+            if (!decoded || decoded.length === 0) return "Taj Mod Server";
+            return decoded;
+        } catch(e) {
+            return "Taj Mod Server";
+        }
+    }
+
+    // parse player string like "12/32"
+    function parsePlayerCount(playerStr) {
+        if (typeof playerStr === 'string' && playerStr.includes('/')) {
+            let parts = playerStr.split('/');
+            let current = parseInt(parts[0]) || 0;
+            let max = parseInt(parts[1]) || 64;
+            return { current, max };
+        }
+        return { current: 0, max: 64 };
+    }
+
+    // get flag based on IP prefix (cosmetic)
+    function getFlagByIp(ip) {
+        if (!ip) return '🌍';
+        if (ip.startsWith('51.75') || ip.startsWith('57.128') || ip.startsWith('89.144') || ip.startsWith('83.168')) return '🇪🇺';
+        if (ip.startsWith('45.136')) return '🇷🇺';
+        if (ip.startsWith('69.9') || ip.startsWith('23.139')) return '🇺🇸';
+        if (ip.startsWith('160.222')) return '🇦🇺';
+        return '🌐';
+    }
+
+    // Rich text to safe HTML with limited styling (color spans, bold, italic)
+    function richToHtmlSafe(raw) {
+        if (!raw) return '';
+        let escaped = raw
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '\uE000')
+            .replace(/>/g, '\uE001');
+        escaped = escaped.replace(/\uE000color=([a-zA-Z0-9#]+)\uE001/gi, '<span style="color:$1">');
+        escaped = escaped.replace(/\uE000\/color\uE001/gi, '</span>');
+        escaped = escaped.replace(/\uE000(\/?)b\uE001/gi, '<$1b>');
+        escaped = escaped.replace(/\uE000(\/?)i\uE001/gi, '<$1i>');
+        escaped = escaped.replace(/\uE000(\/?)u\uE001/gi, '<$1u>');
+        escaped = escaped.replace(/\uE000\/?[a-z]+=[^\uE001]*\uE001/gi, '');
+        escaped = escaped.replace(/\uE000/g, '&lt;').replace(/\uE001/g, '&gt;');
+        if (escaped.length > 80) {
+            let short = escaped.substring(0, 77);
+            let lastTag = short.lastIndexOf('<');
+            if (lastTag > 60) short = short.substring(0, lastTag);
+            escaped = short + '…';
+        }
+        return escaped;
+    }
+
+    // generate server card HTML
+    function renderServerCards(servers) {
+        const container = document.getElementById('serversGrid');
+        if (!servers.length) {
+            container.innerHTML = `<div class="loading-placeholder" style="color:var(--text-dim);">🔍 No servers match your filters. Try adjusting search or wait for refresh.</div>`;
+            return;
         }
 
-        function parsePlayers(playersStr) {
-            if (typeof playersStr === 'string' && playersStr.includes('/')) {
-                const [current, max] = playersStr.split('/');
-                return { current: parseInt(current) || 0, max: parseInt(max) || 64 };
-            }
-            return { current: 0, max: 64 };
-        }
+        let html = '';
+        servers.forEach((server, idx) => {
+            const decodedName = decodeAndCleanServerName(server.info);
+            const players = parsePlayerCount(server.players);
+            const percent = Math.min(100, (players.current / players.max) * 100);
+            const isOfficial = server.officialCode > 0;
+            const flag = getFlagByIp(server.ip);
+            let statusColor = '#b14bff';
+            let statusLabel = 'Online';
+            if (players.current === 0) { statusColor = '#6b6580'; statusLabel = 'Empty'; }
+            else if (percent >= 90) { statusColor = '#ff4d6d'; statusLabel = 'Full'; }
+            else if (percent >= 55) { statusColor = '#ffb14d'; statusLabel = 'Busy'; }
 
-        async function fetchServers() {
-            const container = document.getElementById('serversContainer');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div>Fetching live server data...</div>';
+            const versionDisplay = server.version || REQUIRED_VERSION;
+            const connectCmd = `connect ${server.ip}:${server.port}`;
+            const displayMap = server.map && server.map !== "Unknown" ? server.map : "Surface/Lobby";
+            const friendlyFireActive = !!server.friendlyFire;
+            const whitelist = !!server.whitelist;
+            const modded = !!server.modded;
 
-            try {
-                const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1');
+            // colorised name with inline rich text (light)
+            let nameHtml = richToHtmlSafe(decodedName);
+            if (!nameHtml) nameHtml = "Taj Mod Server";
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const data = await response.json();
-                allServers = data.servers || [];
-
-                updateStats();
-                renderServers(allServers);
-
-                const now = new Date();
-                document.getElementById('lastUpdate').innerHTML = `🕐 Last updated: ${now.toLocaleTimeString()}`;
-
-            } catch (error) {
-                console.error('Fetch error:', error);
-                container.innerHTML = `<div class="error">❌ Failed to load server data: ${error.message}<br><br>🔄 Please check your connection and try again.</div>`;
-            }
-        }
-
-        function updateStats() {
-            let totalPlayers = 0;
-            let officialCount = 0;
-
-            allServers.forEach(server => {
-                const players = parsePlayers(server.players);
-                totalPlayers += players.current;
-                if (server.officialCode > 0) officialCount++;
-            });
-
-            document.getElementById('totalPlayers').innerHTML = totalPlayers;
-            document.getElementById('totalServers').innerHTML = allServers.length;
-            document.getElementById('officialServers').innerHTML = officialCount;
-        }
-
-        function filterServers() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const typeFilter = document.getElementById('typeFilter').value;
-            const ffFilter = document.getElementById('ffFilter').value;
-
-            let filtered = allServers.filter(server => {
-                const serverName = decodeServerName(server.info).toLowerCase();
-
-                if (searchTerm && !serverName.includes(searchTerm)) return false;
-
-                if (typeFilter === 'official' && server.officialCode === 0) return false;
-                if (typeFilter === 'community' && server.officialCode > 0) return false;
-
-                if (ffFilter === 'yes' && !server.friendlyFire) return false;
-                if (ffFilter === 'no' && server.friendlyFire) return false;
-
-                return true;
-            });
-
-            renderServers(filtered);
-        }
-
-        function getRegionFlag(ip) {
-            const regions = {
-                '51.75': '🇪🇺', '57.128': '🇪🇺', '89.144': '🇪🇺', '83.168': '🇪🇺',
-                '45.136': '🇷🇺', '69.9': '🇺🇸', '23.139': '🇺🇸', '160.222': '🇦🇺'
-            };
-            for (const [prefix, flag] of Object.entries(regions)) {
-                if (ip.startsWith(prefix)) return flag;
-            }
-            return '🌍';
-        }
-
-        function richTextToHtml(decoded) {
-            // Escape base HTML first, keep < and > as placeholders for allowed tags
-            let s = decoded
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '\u0001')
-                .replace(/>/g, '\u0002');
-
-            // <color=#RRGGBB> or <color=colorname> ... </color>
-            s = s.replace(/\u0001color=(#[0-9A-Fa-f]{3,8}|[a-zA-Z]+)\u0002/gi, '<span style="color:$1">');
-            s = s.replace(/\u0001\/color\u0002/gi, '</span>');
-
-            // <b> <i> <u> ... </b></i></u>
-            s = s.replace(/\u0001(\/?)(b|i|u)\u0002/gi, '<$1$2>');
-
-            // <size=N> ... </size> (clamped so it can't break layout)
-            s = s.replace(/\u0001size=(\d{1,3})\u0002/gi, (m, n) => {
-                const pct = Math.min(150, Math.max(50, parseInt(n, 10) || 100));
-                return `<span style="font-size:${pct}%">`;
-            });
-            s = s.replace(/\u0001\/size\u0002/gi, '</span>');
-
-            // <link="URL"> ... </link> - drop the link wrapper but keep the text
-            s = s.replace(/\u0001link=[^\u0002]*\u0002/gi, '');
-            s = s.replace(/\u0001\/link\u0002/gi, '');
-
-            // Any remaining unrecognized tags get escaped to literal text
-            s = s.replace(/\u0001/g, '&lt;').replace(/\u0002/g, '&gt;');
-
-            return balanceTags(truncateHtml(s, 60));
-        }
-
-        function truncateHtml(html, maxLen) {
-            let result = '';
-            let count = 0;
-            let i = 0;
-            while (i < html.length && count < maxLen) {
-                if (html[i] === '<') {
-                    const end = html.indexOf('>', i);
-                    if (end === -1) break;
-                    result += html.slice(i, end + 1);
-                    i = end + 1;
-                } else {
-                    result += html[i];
-                    count++;
-                    i++;
-                }
-            }
-            if (i < html.length) result += '…';
-            return result;
-        }
-
-        function balanceTags(html) {
-            const stack = [];
-            const tagRegex = /<(\/?)(span|b|i|u)[^>]*>/gi;
-            let m;
-            while ((m = tagRegex.exec(html)) !== null) {
-                if (!m[1]) {
-                    stack.push(m[2].toLowerCase());
-                } else {
-                    const idx = stack.lastIndexOf(m[2].toLowerCase());
-                    if (idx !== -1) stack.splice(idx, 1);
-                }
-            }
-            while (stack.length) {
-                html += `</${stack.pop()}>`;
-            }
-            return html;
-        }
-
-        function stripTags(str) {
-            return str.replace(/<[^>]*>/g, '');
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            showToast(`Copied: ${text}`);
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2200);
-        }
-
-        function renderServers(servers) {
-            const container = document.getElementById('serversContainer');
-
-            if (servers.length === 0) {
-                container.innerHTML = '<div class="error">🔍 No servers match your filters. Try adjusting your search.</div>';
-                return;
-            }
-
-            container.innerHTML = servers.map((server, idx) => {
-                const serverName = decodeServerName(server.info);
-                const players = parsePlayers(server.players);
-                const percentage = (players.current / players.max) * 100;
-                const isOfficial = server.officialCode > 0;
-                const regionFlag = getRegionFlag(server.ip);
-
-                let statusColor = '#b14bff';
-                let statusText = 'Online';
-                if (players.current === 0) {
-                    statusColor = '#6b6580';
-                    statusText = 'Empty';
-                } else if (percentage > 90) {
-                    statusColor = '#ff4d6d';
-                    statusText = 'Full';
-                } else if (percentage > 50) {
-                    statusColor = '#ffb14d';
-                    statusText = 'Busy';
-                }
-
-                const connectString = `connect ${server.ip}:${server.port}`;
-                const animDelay = Math.min(idx * 0.04, 0.6);
-
-                return `
-                    <div class="server-card" style="animation-delay: ${animDelay}s">
-                        <div class="server-header">
-                            <div class="server-name" title="${stripTags(serverName).replace(/"/g, '&quot;')}">
-                                ${regionFlag} ${richTextToHtml(serverName)}
-                            </div>
-                            ${isOfficial ? '<span class="official-badge">👑 OFFICIAL</span>' : '<span class="community-badge">🏠 COMMUNITY</span>'}
+            html += `
+                <div class="server-card" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
+                    <div class="card-header">
+                        <div class="server-name">
+                            <span>${flag}</span>
+                            <span style="font-weight:600;">${nameHtml}</span>
                         </div>
-                        <div class="server-body">
-                            <div class="player-info">
-                                <div class="player-count">
-                                    <span style="color: ${statusColor}">${players.current}</span>
-                                    <span class="max">/${players.max}</span>
-                                </div>
-                                <div class="status-pill" style="color: ${statusColor}; background: ${statusColor}1a; border: 1px solid ${statusColor}40">
-                                    <span class="status-dot" style="background: ${statusColor}"></span>${statusText}
-                                </div>
+                        ${isOfficial ? '<span class="badge-official">👑 OFFICIAL</span>' : '<span class="badge-community">🏠 COMMUNITY</span>'}
+                    </div>
+                    <div class="card-body">
+                        <div class="player-row">
+                            <div class="player-count">${players.current}<span> / ${players.max}</span></div>
+                            <div class="status-badge" style="color:${statusColor}; border:1px solid ${statusColor}30; background:${statusColor}10;">
+                                <span class="dot" style="background:${statusColor}; box-shadow:0 0 6px ${statusColor};"></span> ${statusLabel}
                             </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${percentage}%; background: ${statusColor}; color: ${statusColor}"></div>
-                            </div>
-                            <div class="server-details">
-                                <div class="detail-item">
-                                    <span>🗺️</span>
-                                    <span><strong>Map:</strong> ${server.map || 'Unknown'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span>📦</span>
-                                    <span><strong>Version:</strong> ${server.version || '1.0.3'}</span>
-                                </div>
-                                ${server.friendlyFire ? '<div class="detail-item"><span>⚔️</span><span><strong>Friendly Fire:</strong> ON</span></div>' : ''}
-                                ${server.modded ? '<div class="detail-item"><span>🔧</span><span><strong>Modded:</strong> Yes</span></div>' : ''}
-                                ${server.whitelist ? '<div class="detail-item"><span>🔒</span><span><strong>Whitelist:</strong> Enabled</span></div>' : ''}
-                            </div>
-                            <div class="connection-details">
-                                <span>🔗 ${server.ip}:${server.port}</span>
-                                <button class="copy-btn" onclick="copyToClipboard('${connectString}')">📋 Copy</button>
-                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width:${percent}%; background:${statusColor};"></div>
+                        </div>
+                        <div class="meta-grid">
+                            <div class="meta-item">🗺️ <strong>Map:</strong> ${displayMap}</div>
+                            <div class="meta-item">📦 <strong>Version:</strong> ${versionDisplay}</div>
+                            ${friendlyFireActive ? '<div class="meta-item">⚔️ <strong>FF:</strong> ON</div>' : ''}
+                            ${modded ? '<div class="meta-item">🔧 <strong>Modded:</strong> Yes</div>' : ''}
+                            ${whitelist ? '<div class="meta-item">🔒 <strong>Whitelist</strong></div>' : ''}
+                        </div>
+                        <div class="connect-line">
+                            <span style="font-family: monospace;">🔗 ${server.ip}:${server.port}</span>
+                            <button class="copy-command" data-connect="${connectCmd}">📋 Copy connect</button>
                         </div>
                     </div>
-                `;
-            }).join('');
-        }
+                </div>
+            `;
+        });
+        container.innerHTML = html;
 
-        function escapeHtml(str) {
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
+        // attach copy events
+        document.querySelectorAll('.copy-command').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const cmd = btn.getAttribute('data-connect');
+                if (cmd) {
+                    navigator.clipboard.writeText(cmd).then(() => {
+                        showToastMessage(`Copied: ${cmd}`);
+                    }).catch(() => showToastMessage("Press Ctrl+C to copy"));
+                }
             });
-        }
+        });
+    }
 
-        fetchServers();
-        setInterval(fetchServers, 30000);
-    </script>
+    function showToastMessage(msg) {
+        const toast = document.getElementById('copyToast');
+        toast.textContent = msg || "✅ Copied!";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // update stats counters
+    function updateGlobalStats(servers) {
+        let totalPlayers = 0;
+        let officialCount = 0;
+        servers.forEach(s => {
+            const pl = parsePlayerCount(s.players);
+            totalPlayers += pl.current;
+            if (s.officialCode > 0) officialCount++;
+        });
+        document.getElementById('totalPlayersLive').innerText = totalPlayers;
+        document.getElementById('totalServersLive').innerText = servers.length;
+        document.getElementById('officialCountLive').innerText = officialCount;
+    }
+
+    // filter servers based on UI controls
+    function getFilteredServers() {
+        const searchTerm = document.getElementById('searchQuery').value.toLowerCase().trim();
+        const typeVal = document.getElementById('typeSelect').value;
+        const ffVal = document.getElementById('ffSelect').value;
+
+        let filtered = cachedServers.filter(server => {
+            // version filter only version >= 1.0.3? api already has latest but we keep only required version for display
+            if (server.version && server.version !== REQUIRED_VERSION && !server.version.startsWith(REQUIRED_VERSION)) {
+                // we still show but highlight? keep for consistency because some are different versions but show anyway
+            }
+            const serverNameClean = decodeAndCleanServerName(server.info).toLowerCase();
+            if (searchTerm && !serverNameClean.includes(searchTerm)) return false;
+
+            if (typeVal === 'official' && server.officialCode === 0) return false;
+            if (typeVal === 'community' && server.officialCode > 0) return false;
+
+            if (ffVal === 'yes' && !server.friendlyFire) return false;
+            if (ffVal === 'no' && server.friendlyFire) return false;
+            return true;
+        });
+        return filtered;
+    }
+
+    // apply filters and re-render
+    function applyFiltersAndRender() {
+        const filtered = getFilteredServers();
+        renderServerCards(filtered);
+        updateGlobalStats(cachedServers);
+    }
+
+    // fetch servers from API endpoint
+    async function fetchServerList() {
+        if (isFetching) return;
+        isFetching = true;
+        const container = document.getElementById('serversGrid');
+        container.innerHTML = `<div class="loading-placeholder"><div class="spinner"></div>Fetching live servers from Taj network...</div>`;
+        
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            let rawServers = data.servers || [];
+            // filter servers that match minimum version (1.0.3 or newer)
+            cachedServers = rawServers.filter(srv => {
+                const ver = srv.version || '';
+                if (ver === REQUIRED_VERSION) return true;
+                if (ver.startsWith(REQUIRED_VERSION)) return true;
+                // also allow 1.0.3-patch style
+                if (ver.includes(REQUIRED_VERSION)) return true;
+                // we keep any version as API may have minor but we show only stable ones
+                return true; 
+            });
+            updateGlobalStats(cachedServers);
+            applyFiltersAndRender();
+            const now = new Date();
+            document.getElementById('timestampFooter').innerHTML = `🕐 Last updated: ${now.toLocaleTimeString()} · Auto-refresh every 30s`;
+        } catch (err) {
+            console.error("Fetch error", err);
+            container.innerHTML = `<div class="error-placeholder" style="color: #ff9090;">❌ Failed to load server list: ${err.message}<br><br>🔄 Check connection or try again later.</div>`;
+        } finally {
+            isFetching = false;
+        }
+    }
+
+    // manual refresh handler
+    function manualRefresh() {
+        fetchServerList();
+    }
+
+    // debounced search handler
+    let debounceTimer;
+    function handleSearch() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            applyFiltersAndRender();
+        }, 220);
+    }
+
+    // event listeners
+    function bindEvents() {
+        const searchInput = document.getElementById('searchQuery');
+        const typeSelect = document.getElementById('typeSelect');
+        const ffSelect = document.getElementById('ffSelect');
+        const refreshBtn = document.getElementById('manualRefreshBtn');
+        
+        searchInput.addEventListener('input', handleSearch);
+        typeSelect.addEventListener('change', () => applyFiltersAndRender());
+        ffSelect.addEventListener('change', () => applyFiltersAndRender());
+        refreshBtn.addEventListener('click', () => manualRefresh());
+    }
+
+    // start periodic refresh
+    function init() {
+        bindEvents();
+        fetchServerList();
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+            fetchServerList();
+        }, 30000);
+    }
+
+    init();
+</script>
 </body>
 </html>
