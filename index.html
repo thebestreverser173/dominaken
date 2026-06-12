@@ -581,7 +581,6 @@
             if (!encoded) return "Taj Mod Server";
             try {
                 let decoded = atob(encoded);
-                decoded = decoded.replace(/<[^>]*>/g, '');
                 decoded = decoded.replace(/&amp;/g, '&');
                 decoded = decoded.replace(/&lt;/g, '<');
                 decoded = decoded.replace(/&gt;/g, '>');
@@ -671,6 +670,59 @@
             return '🌍';
         }
 
+        function richTextToHtml(decoded) {
+            // Escape base HTML first, keep < and > as placeholders for allowed tags
+            let s = decoded
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '\u0001')
+                .replace(/>/g, '\u0002');
+
+            // <color=#RRGGBB> ... </color>
+            s = s.replace(/\u0001color=#([0-9A-Fa-f]{6})\u0002/gi, '<span style="color:#$1">');
+            s = s.replace(/\u0001\/color\u0002/gi, '</span>');
+
+            // <b> <i> <u> ... </b></i></u>
+            s = s.replace(/\u0001(\/?)(b|i|u)\u0002/gi, '<$1$2>');
+
+            // <size=N> ... </size> (clamped so it can't break layout)
+            s = s.replace(/\u0001size=(\d{1,3})\u0002/gi, (m, n) => {
+                const pct = Math.min(150, Math.max(50, parseInt(n, 10) || 100));
+                return `<span style="font-size:${pct}%">`;
+            });
+            s = s.replace(/\u0001\/size\u0002/gi, '</span>');
+
+            // <link="URL"> ... </link> - drop the link wrapper but keep the text
+            s = s.replace(/\u0001link=[^\u0002]*\u0002/gi, '');
+            s = s.replace(/\u0001\/link\u0002/gi, '');
+
+            // Any remaining unrecognized tags get escaped to literal text
+            s = s.replace(/\u0001/g, '&lt;').replace(/\u0002/g, '&gt;');
+
+            return balanceTags(s);
+        }
+
+        function balanceTags(html) {
+            const stack = [];
+            const tagRegex = /<(\/?)(span|b|i|u)[^>]*>/gi;
+            let m;
+            while ((m = tagRegex.exec(html)) !== null) {
+                if (!m[1]) {
+                    stack.push(m[2].toLowerCase());
+                } else {
+                    const idx = stack.lastIndexOf(m[2].toLowerCase());
+                    if (idx !== -1) stack.splice(idx, 1);
+                }
+            }
+            while (stack.length) {
+                html += `</${stack.pop()}>`;
+            }
+            return html;
+        }
+
+        function stripTags(str) {
+            return str.replace(/<[^>]*>/g, '');
+        }
+
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text);
             showToast(`Copied: ${text}`);
@@ -717,8 +769,8 @@
                 return `
                     <div class="server-card" style="animation-delay: ${animDelay}s">
                         <div class="server-header">
-                            <div class="server-name" title="${serverName.replace(/"/g, '&quot;')}">
-                                ${regionFlag} ${escapeHtml(serverName.substring(0, 60))}${serverName.length > 60 ? '...' : ''}
+                            <div class="server-name" title="${stripTags(serverName).replace(/"/g, '&quot;')}">
+                                ${regionFlag} ${richTextToHtml(serverName.substring(0, 100))}
                             </div>
                             ${isOfficial ? '<span class="official-badge">👑 OFFICIAL</span>' : '<span class="community-badge">🏠 COMMUNITY</span>'}
                         </div>
