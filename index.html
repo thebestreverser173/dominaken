@@ -498,23 +498,33 @@
 <div id="copyToast" class="toast-msg">✅ Copied connect command</div>
 
 <script>
-    // ---------- Robust Unity Rich Text to HTML converter (full SCP:SL support) ----------
+    // ---------- SAFE Unity Rich Text to HTML converter (handles all edge cases) ----------
+    function safeString(input) {
+        if (input === null || input === undefined) return '';
+        return String(input);
+    }
+    
     function unityRichTextToHtml(rawText) {
-        if (!rawText || rawText.trim() === "") return "Taj Mod Server";
+        let input = safeString(rawText);
+        if (input.trim() === "") return "Taj Mod Server";
         
-        let html = rawText;
+        let html = input;
         
-        // Handle color tags - most important for SCP:SL
-        html = html.replace(/<color=([^>]+?)>/gi, (match, colorVal) => {
-            let colorStyle = colorVal.trim();
+        // Handle color tags safely
+        html = html.replace(/<color=([^>]+?)>/gi, function(match, colorVal) {
+            let colorStyle = safeString(colorVal).trim();
             if (colorStyle.startsWith('#')) {
+                if (/^#[0-9A-Fa-f]{3,8}$/.test(colorStyle)) {
+                    return `<span style="color: ${colorStyle};">`;
+                }
                 return `<span style="color: ${colorStyle};">`;
             } else {
                 const colorMap = { 
                     'red': '#ff4d4d', 'green': '#4cff9e', 'blue': '#4d9eff', 
                     'yellow': '#ffd966', 'white': '#ffffff', 'black': '#000000', 
                     'cyan': '#00ffff', 'magenta': '#ff44ff', 'orange': '#ffaa44',
-                    'purple': '#b14bff', 'pink': '#ff88cc', 'lime': '#aaff44'
+                    'purple': '#b14bff', 'pink': '#ff88cc', 'lime': '#aaff44',
+                    'grey': '#888888', 'gray': '#888888'
                 };
                 if (colorMap[colorStyle.toLowerCase()]) {
                     return `<span style="color: ${colorMap[colorStyle.toLowerCase()]};">`;
@@ -525,7 +535,7 @@
         html = html.replace(/<\/color>/gi, '</span>');
         
         // Size tags
-        html = html.replace(/<size=(\d+)>/gi, (match, sizeNum) => {
+        html = html.replace(/<size=(\d+)>/gi, function(match, sizeNum) {
             let pxSize = Math.min(26, Math.max(12, parseInt(sizeNum) || 14));
             return `<span style="font-size: ${pxSize}px;">`;
         });
@@ -536,13 +546,14 @@
         html = html.replace(/<i>/gi, '<em>').replace(/<\/i>/gi, '</em>');
         html = html.replace(/<u>/gi, '<u>').replace(/<\/u>/gi, '</u>');
         
-        // Remove other Unity-specific tags but keep content
-        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent|margin|space|alpha|font)[^>]*>/gi, '');
+        // Remove other Unity-specific tags
+        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent|margin|space|alpha|font|link|a)[^>]*>/gi, '');
         
-        // Handle any malformed tags - cleanup
-        html = html.replace(/<(\/?(?:color|size|b|i|u))[^>]*>/gi, '<$1>');
+        // Remove any remaining angle brackets that might break HTML
+        html = html.replace(/<(?![\/]?(?:span|strong|em|u)>)/g, '&lt;');
+        html = html.replace(/(?<!<[\/]?(?:span|strong|em|u))>/g, '&gt;');
         
-        // Fix missing closing tags by simple balancing (prevent broken display)
+        // Balance tags
         let openSpans = (html.match(/<span/g) || []).length;
         let closeSpans = (html.match(/<\/span>/g) || []).length;
         for (let i = 0; i < openSpans - closeSpans; i++) html += '</span>';
@@ -555,23 +566,23 @@
         let closeEm = (html.match(/<\/em>/g) || []).length;
         for (let i = 0; i < openEm - closeEm; i++) html += '</em>';
         
-        // Final safety - escape any potential XSS
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        const sanitized = tempDiv.innerHTML;
+        let openU = (html.match(/<u(?![^>]*\/>)/g) || []).length;
+        let closeU = (html.match(/<\/u>/g) || []).length;
+        for (let i = 0; i < openU - closeU; i++) html += '</u>';
         
-        return sanitized || "Taj Mod Server";
+        return html || "Taj Mod Server";
     }
     
-    // Decode base64 and convert to HTML
+    // Decode base64 safely
     function decodeAndRenderServerName(encoded) {
-        if (!encoded) return "Taj Mod Server";
+        let encodedStr = safeString(encoded);
+        if (!encodedStr) return "Taj Mod Server";
         try {
-            let decoded = atob(encoded);
+            let decoded = atob(encodedStr);
+            decoded = safeString(decoded);
             decoded = decoded.replace(/\0/g, '');
             if (!decoded.trim()) return "Taj Mod Server";
-            // Remove any invalid control characters
-            decoded = decoded.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+            decoded = decoded.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
             const rendered = unityRichTextToHtml(decoded);
             return rendered;
         } catch(e) {
@@ -579,26 +590,52 @@
             return "Taj Mod Server";
         }
     }
+    
+    // Get plain text version for search
+    function getPlainServerName(encoded) {
+        let encodedStr = safeString(encoded);
+        if (!encodedStr) return "";
+        try {
+            let decoded = atob(encodedStr);
+            decoded = safeString(decoded);
+            return decoded.replace(/<[^>]*>/g, '').trim().toLowerCase();
+        } catch(e) {
+            return "";
+        }
+    }
 
-    // Parse player string
+    // Parse player string safely
     function parsePlayerCount(playerStr) {
-        if (typeof playerStr === 'string' && playerStr.includes('/')) {
-            let parts = playerStr.split('/');
+        let str = safeString(playerStr);
+        if (str.includes('/')) {
+            let parts = str.split('/');
             let current = parseInt(parts[0]) || 0;
             let max = parseInt(parts[1]) || 64;
             return { current, max };
         }
-        if (typeof playerStr === 'number') return { current: playerStr, max: 64 };
+        let num = parseInt(str);
+        if (!isNaN(num)) return { current: num, max: 64 };
         return { current: 0, max: 64 };
     }
 
     function getFlagByIp(ip) {
-        if (!ip) return '🌍';
-        if (ip.startsWith('51.75') || ip.startsWith('57.128') || ip.startsWith('89.144') || ip.startsWith('83.168')) return '🇪🇺';
-        if (ip.startsWith('45.136')) return '🇷🇺';
-        if (ip.startsWith('69.9') || ip.startsWith('23.139')) return '🇺🇸';
-        if (ip.startsWith('160.222')) return '🇦🇺';
+        let ipStr = safeString(ip);
+        if (!ipStr) return '🌍';
+        if (ipStr.startsWith('51.75') || ipStr.startsWith('57.128') || ipStr.startsWith('89.144') || ipStr.startsWith('83.168')) return '🇪🇺';
+        if (ipStr.startsWith('45.136')) return '🇷🇺';
+        if (ipStr.startsWith('69.9') || ipStr.startsWith('23.139')) return '🇺🇸';
+        if (ipStr.startsWith('160.222')) return '🇦🇺';
         return '🌐';
+    }
+    
+    function escapeHtml(str) {
+        let s = safeString(str);
+        return s.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
 
     let cachedServers = [];
@@ -617,7 +654,7 @@
             const server = servers[idx];
             const richNameHtml = decodeAndRenderServerName(server.info);
             const players = parsePlayerCount(server.players);
-            const percent = Math.min(100, (players.current / players.max) * 100);
+            const percent = players.max > 0 ? Math.min(100, (players.current / players.max) * 100) : 0;
             const isOfficial = server.officialCode > 0;
             const flag = getFlagByIp(server.ip);
             
@@ -627,21 +664,15 @@
             else if (percent >= 90) { statusColor = '#ff4d6d'; statusLabel = 'Full'; }
             else if (percent >= 55) { statusColor = '#ffb14d'; statusLabel = 'Busy'; }
             
-            const versionDisplay = server.version || "1.0.3";
-            const connectCmd = `connect ${server.ip}:${server.port}`;
-            const displayMap = server.map && server.map !== "Unknown" ? server.map : "Surface/Lobby";
+            const versionDisplay = server.version ? safeString(server.version) : "1.0.3";
+            const connectCmd = `connect ${escapeHtml(safeString(server.ip))}:${escapeHtml(safeString(server.port))}`;
+            const displayMap = (server.map && server.map !== "Unknown") ? escapeHtml(safeString(server.map)) : "Surface/Lobby";
             const friendlyFireActive = !!server.friendlyFire;
             const whitelist = !!server.whitelist;
             const modded = !!server.modded;
             
-            // Get plain text name for search filtering (preserved for filter but display uses rich)
-            let plainName = "";
-            try {
-                if (server.info) plainName = atob(server.info).replace(/<[^>]*>/g, '').toLowerCase();
-            } catch(e) { plainName = ""; }
-            
             html += `
-                <div class="server-card" data-plain-name="${escapeHtml(plainName)}" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
+                <div class="server-card" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
                     <div class="card-header">
                         <div class="server-name-wrapper">
                             <div class="server-name">
@@ -662,15 +693,15 @@
                             <div class="progress-fill" style="width:${percent}%; background:${statusColor};"></div>
                         </div>
                         <div class="meta-grid">
-                            <div class="meta-item">🗺️ <strong>Map:</strong> ${escapeHtml(displayMap)}</div>
+                            <div class="meta-item">🗺️ <strong>Map:</strong> ${displayMap}</div>
                             <div class="meta-item">📦 <strong>Version:</strong> ${escapeHtml(versionDisplay)}</div>
                             ${friendlyFireActive ? '<div class="meta-item">⚔️ <strong>FF:</strong> ON</div>' : ''}
                             ${modded ? '<div class="meta-item">🔧 <strong>Modded:</strong> Yes</div>' : ''}
                             ${whitelist ? '<div class="meta-item">🔒 <strong>Whitelist</strong></div>' : ''}
                         </div>
                         <div class="connect-line">
-                            <span style="font-family: monospace;">🔗 ${escapeHtml(server.ip)}:${escapeHtml(server.port)}</span>
-                            <button class="copy-command" data-connect="${escapeHtml(connectCmd)}">📋 Copy connect</button>
+                            <span style="font-family: monospace; overflow: hidden; text-overflow: ellipsis;">🔗 ${escapeHtml(safeString(server.ip))}:${escapeHtml(safeString(server.port))}</span>
+                            <button class="copy-command" data-connect="${connectCmd.replace(/"/g, '&quot;')}">📋 Copy connect</button>
                         </div>
                     </div>
                 </div>
@@ -678,28 +709,17 @@
         }
         container.innerHTML = html;
         
-        // attach copy events
         document.querySelectorAll('.copy-command').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const cmd = btn.getAttribute('data-connect');
+            btn.addEventListener('click', function(e) {
+                const cmd = this.getAttribute('data-connect');
                 if (cmd) {
-                    navigator.clipboard.writeText(cmd).then(() => {
-                        showToastMessage(`Copied: ${cmd}`);
-                    }).catch(() => showToastMessage("Press Ctrl+C to copy"));
+                    navigator.clipboard.writeText(cmd).then(function() {
+                        showToastMessage("Copied: " + cmd);
+                    }).catch(function() {
+                        showToastMessage("Press Ctrl+C to copy");
+                    });
                 }
             });
-        });
-    }
-    
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-            return c;
         });
     }
     
@@ -707,17 +727,18 @@
         const toast = document.getElementById('copyToast');
         toast.textContent = msg || "✅ Copied!";
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2200);
+        setTimeout(function() { toast.classList.remove('show'); }, 2200);
     }
     
     function updateGlobalStats(servers) {
         let totalPlayers = 0;
         let officialCount = 0;
-        servers.forEach(s => {
+        for (let i = 0; i < servers.length; i++) {
+            const s = servers[i];
             const pl = parsePlayerCount(s.players);
             totalPlayers += pl.current;
             if (s.officialCode > 0) officialCount++;
-        });
+        }
         document.getElementById('totalPlayersLive').innerText = totalPlayers;
         document.getElementById('totalServersLive').innerText = servers.length;
         document.getElementById('officialCountLive').innerText = officialCount;
@@ -728,20 +749,20 @@
         const typeVal = document.getElementById('typeSelect').value;
         const ffVal = document.getElementById('ffSelect').value;
         
-        return cachedServers.filter(server => {
-            // Get plain text name for searching
-            let plainName = "";
-            try {
-                if (server.info) plainName = atob(server.info).replace(/<[^>]*>/g, '').toLowerCase();
-            } catch(e) { plainName = ""; }
+        const filtered = [];
+        for (let i = 0; i < cachedServers.length; i++) {
+            const server = cachedServers[i];
+            const plainName = getPlainServerName(server.info);
             
-            if (searchTerm && !plainName.includes(searchTerm)) return false;
-            if (typeVal === 'official' && server.officialCode === 0) return false;
-            if (typeVal === 'community' && server.officialCode > 0) return false;
-            if (ffVal === 'yes' && !server.friendlyFire) return false;
-            if (ffVal === 'no' && server.friendlyFire) return false;
-            return true;
-        });
+            if (searchTerm && !plainName.includes(searchTerm)) continue;
+            if (typeVal === 'official' && server.officialCode === 0) continue;
+            if (typeVal === 'community' && server.officialCode > 0) continue;
+            if (ffVal === 'yes' && !server.friendlyFire) continue;
+            if (ffVal === 'no' && server.friendlyFire) continue;
+            
+            filtered.push(server);
+        }
+        return filtered;
     }
     
     function applyFiltersAndRender() {
@@ -754,22 +775,39 @@
         if (isFetching) return;
         isFetching = true;
         const container = document.getElementById('serversGrid');
-        container.innerHTML = `<div class="loading-placeholder"><div class="spinner"></div>Fetching live servers from Taj network...</div>`;
+        container.innerHTML = '<div class="loading-placeholder"><div class="spinner"></div>Fetching live servers from Taj network...</div>';
         
         try {
-            const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1');
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(function() { controller.abort(); }, 8000);
+            
+            const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1', {
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            
             const data = await response.json();
-            let rawServers = data.servers || [];
-            // Keep all servers, just filter out obviously broken ones
-            cachedServers = rawServers.filter(s => s.ip && s.port);
+            const rawServers = data.servers || [];
+            
+            cachedServers = [];
+            for (let i = 0; i < rawServers.length; i++) {
+                const s = rawServers[i];
+                if (s.ip && s.port) {
+                    cachedServers.push(s);
+                }
+            }
+            
             updateGlobalStats(cachedServers);
             applyFiltersAndRender();
+            
             const now = new Date();
-            document.getElementById('timestampFooter').innerHTML = `🕐 Last updated: ${now.toLocaleTimeString()} · Auto-refresh every 30s`;
+            document.getElementById('timestampFooter').innerHTML = '🕐 Last updated: ' + now.toLocaleTimeString() + ' · Auto-refresh every 30s';
         } catch (err) {
-            console.error(err);
-            container.innerHTML = `<div class="error-placeholder" style="color: #ff9090;">❌ Failed to load server list: ${err.message}<br><br>🔄 Check connection or try again later.</div>`;
+            console.error('Fetch error:', err);
+            container.innerHTML = '<div class="error-placeholder" style="color: #ff9090;">❌ Failed to load server list: ' + escapeHtml(err.message) + '<br><br>🔄 Check connection or try again later.</div>';
         } finally {
             isFetching = false;
         }
@@ -782,21 +820,21 @@
     let debounceTimer;
     function handleSearch() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => applyFiltersAndRender(), 200);
+        debounceTimer = setTimeout(function() { applyFiltersAndRender(); }, 200);
     }
     
     function bindEvents() {
         document.getElementById('searchQuery').addEventListener('input', handleSearch);
-        document.getElementById('typeSelect').addEventListener('change', () => applyFiltersAndRender());
-        document.getElementById('ffSelect').addEventListener('change', () => applyFiltersAndRender());
-        document.getElementById('manualRefreshBtn').addEventListener('click', () => manualRefresh());
+        document.getElementById('typeSelect').addEventListener('change', function() { applyFiltersAndRender(); });
+        document.getElementById('ffSelect').addEventListener('change', function() { applyFiltersAndRender(); });
+        document.getElementById('manualRefreshBtn').addEventListener('click', function() { manualRefresh(); });
     }
     
     function init() {
         bindEvents();
         fetchServerList();
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => fetchServerList(), 30000);
+        refreshInterval = setInterval(function() { fetchServerList(); }, 30000);
     }
     
     init();
