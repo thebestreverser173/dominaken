@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Taj Mod | Live Server Browser & Player Tracker</title>
+    <title>Taj Mod | Live Server Browser</title>
     <style>
         * {
             margin: 0;
@@ -142,6 +142,9 @@
             word-break: break-word;
             flex: 1;
             line-height: 1.4;
+        }
+        .server-name span, .server-name strong, .server-name em {
+            display: inline;
         }
         .badge {
             font-size: 10px;
@@ -329,8 +332,9 @@
         let allServers = [];
         let refreshTimer = null;
 
-        // Complete mapping of Unicode small capitals to regular ASCII
-        const smallCapMap = {
+        // Complete mapping of Unicode small capitals to regular ASCII (corrected)
+        const smallCapToAscii = {
+            // Small capital letters (U+1D00 to U+1D2C)
             '\u1D00': 'A', '\u1D01': 'B', '\u1D02': 'C', '\u1D03': 'D', '\u1D04': 'E',
             '\u1D05': 'F', '\u1D06': 'G', '\u1D07': 'H', '\u1D08': 'I', '\u1D09': 'J',
             '\u1D0A': 'K', '\u1D0B': 'L', '\u1D0C': 'M', '\u1D0D': 'N', '\u1D0E': 'O',
@@ -341,21 +345,34 @@
             '\u1D23': 'j', '\u1D24': 'k', '\u1D25': 'l', '\u1D26': 'm', '\u1D27': 'n',
             '\u1D28': 'o', '\u1D29': 'p', '\u1D2A': 'q', '\u1D2B': 'r', '\u1D2C': 's',
             '\u1D2D': 't', '\u1D2E': 'u', '\u1D2F': 'v', '\u1D30': 'w', '\u1D31': 'x',
-            '\u1D32': 'y', '\u1D33': 'z', '\u24B6': 'A', '\u24B7': 'B', '\u24B8': 'C',
-            '\u24B9': 'D', '\u24BA': 'E', '\u24BB': 'F', '\u24BC': 'G', '\u24BD': 'H',
-            '\u24BE': 'I', '\u24BF': 'J', '\u24C0': 'K', '\u24C1': 'L', '\u24C2': 'M',
-            '\u24C3': 'N', '\u24C4': 'O', '\u24C5': 'P', '\u24C6': 'Q', '\u24C7': 'R',
-            '\u24C8': 'S', '\u24C9': 'T', '\u24CA': 'U', '\u24CB': 'V', '\u24CC': 'W',
-            '\u24CD': 'X', '\u24CE': 'Y', '\u24CF': 'Z'
+            '\u1D32': 'y', '\u1D33': 'z',
+            // Encircled letters (sometimes used)
+            '\u24B6': 'A', '\u24B7': 'B', '\u24B8': 'C', '\u24B9': 'D', '\u24BA': 'E',
+            '\u24BB': 'F', '\u24BC': 'G', '\u24BD': 'H', '\u24BE': 'I', '\u24BF': 'J',
+            '\u24C0': 'K', '\u24C1': 'L', '\u24C2': 'M', '\u24C3': 'N', '\u24C4': 'O',
+            '\u24C5': 'P', '\u24C6': 'Q', '\u24C7': 'R', '\u24C8': 'S', '\u24C9': 'T',
+            '\u24CA': 'U', '\u24CB': 'V', '\u24CC': 'W', '\u24CD': 'X', '\u24CE': 'Y', '\u24CF': 'Z',
+            // Common problematic characters from the data
+            'á': '', '´': '', '': '', '': '', '': '', '': '', '': '', '': '', '': ''
         };
 
         function normalizeSmallCaps(text) {
-            if (!text) return text;
+            if (!text || typeof text !== 'string') return text;
             let result = '';
             for (let i = 0; i < text.length; i++) {
                 let ch = text[i];
-                if (smallCapMap[ch]) {
-                    result += smallCapMap[ch];
+                let code = ch.charCodeAt(0);
+                // U+1D00 to U+1D33 are small caps
+                if (code >= 0x1D00 && code <= 0x1D33) {
+                    let offset = code - 0x1D00;
+                    let asciiMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+                    if (offset < asciiMap.length) {
+                        result += asciiMap[offset];
+                    } else {
+                        result += ch;
+                    }
+                } else if (smallCapToAscii[ch]) {
+                    result += smallCapToAscii[ch];
                 } else {
                     result += ch;
                 }
@@ -372,7 +389,8 @@
                 decoded = normalizeSmallCaps(decoded);
                 decoded = decoded.replace(/<color=#([0-9a-fA-F]{6})>([^<]*)<\/color>/gi, '<span style="color: #$1;">$2</span>');
                 decoded = decoded.replace(/<color=#([0-9a-fA-F]{3})>([^<]*)<\/color>/gi, function(m, h, c) {
-                    return '<span style="color: #' + h[0]+h[0]+h[1]+h[1]+h[2]+h[2] + ';">' + c + '</span>';
+                    let full = '#' + h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+                    return '<span style="color: ' + full + ';">' + c + '</span>';
                 });
                 const colors = {
                     'red': '#ff4d4d', 'green': '#4cff9e', 'blue': '#4d9eff',
