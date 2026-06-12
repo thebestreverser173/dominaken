@@ -1,0 +1,168 @@
+<!-- ============================================ -->
+<!-- public/index.html - Optimized Frontend -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taj Mod | Canlı Oyuncu Listesi</title>
+    <meta name="description" content="Taj Mod SCP: Secret Laboratory canlı oyuncu listesi ve sunucu durumu">
+    <meta name="theme-color" content="#00ff41">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',monospace;background:#0a0f1e;color:#e0e0e0}
+        .header{background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);border-bottom:2px solid #00ff41;padding:15px 20px;position:sticky;top:0;z-index:100}
+        .container{max-width:1400px;margin:0 auto;padding:20px}
+        .stats{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+        .stat-card{background:linear-gradient(135deg,#11161f,#0e121c);border-radius:12px;padding:15px 25px;flex:1;min-width:120px;text-align:center;border:1px solid #1f2a3a}
+        .stat-value{font-size:36px;font-weight:bold;color:#00ff41}
+        .stat-label{font-size:12px;color:#888;margin-top:5px}
+        .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+        .filter-input{background:#1a1f2e;border:1px solid #2a2f3e;color:#fff;padding:10px 15px;border-radius:8px;flex:1;min-width:150px}
+        .filter-input:focus{outline:none;border-color:#00ff41}
+        .servers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:15px}
+        .server-card{background:linear-gradient(135deg,#11161f,#0e121c);border-radius:12px;overflow:hidden;border:1px solid #1f2a3a;transition:all .3s}
+        .server-card:hover{transform:translateY(-2px);border-color:#00ff41}
+        .server-header{padding:12px 15px;background:rgba(0,0,0,0.5);border-bottom:1px solid #1f2a3a;display:flex;justify-content:space-between;align-items:center}
+        .server-name{font-weight:bold;font-size:16px;word-break:break-word}
+        .official-badge{background:#00ff41;color:#000;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:bold}
+        .server-body{padding:12px 15px}
+        .player-info{display:flex;justify-content:space-between;margin-bottom:10px}
+        .player-count{font-size:22px;font-weight:bold}
+        .player-count .current{color:#00ff41}
+        .progress-bar{background:#1a1f2e;border-radius:10px;height:6px;overflow:hidden;margin-bottom:10px}
+        .progress-fill{background:linear-gradient(90deg,#00ff41,#00cc33);height:100%;transition:width .3s}
+        .server-details{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#aaa;margin-top:8px}
+        .detail-item{display:flex;align-items:center;gap:3px}
+        .loading,.error{text-align:center;padding:40px;color:#888}
+        .error{color:#ff4444}
+        .footer{text-align:center;padding:20px;color:#555;border-top:1px solid #1f2a3a;margin-top:20px;font-size:12px}
+        @media (max-width:768px){.servers-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="max-width:1400px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div><h1 style="color:#00ff41;font-size:22px">🎮 Taj Mod | SCP:SL</h1><p style="font-size:11px;color:#888">Canlı Oyuncu Listesi</p></div>
+            <button onclick="fetchData()" style="background:#00ff41;color:#000;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:bold">⟳ Yenile</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="stats" id="stats">
+            <div class="stat-card"><div class="stat-value" id="totalPlayers">0</div><div class="stat-label">Toplam Oyuncu</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalServers">0</div><div class="stat-label">Aktif Sunucu</div></div>
+            <div class="stat-card"><div class="stat-value" id="fullServers">0</div><div class="stat-label">Dolu Sunucu</div></div>
+        </div>
+        <div class="filters">
+            <input type="text" class="filter-input" id="searchInput" placeholder="🔍 Sunucu ara..." onkeyup="filterServers()">
+            <select class="filter-input" id="regionFilter" onchange="filterServers()"><option value="all">🌍 Tüm Bölgeler</option><option value="EU">🇪🇺 Avrupa</option><option value="US">🇺🇸 Amerika</option><option value="AS">🇯🇵 Asya</option></select>
+            <select class="filter-input" id="typeFilter" onchange="filterServers()"><option value="all">🎮 Tüm Sunucular</option><option value="official">👑 Resmi</option><option value="community">🏠 Topluluk</option></select>
+        </div>
+        <div id="serversContainer" class="servers-grid"><div class="loading">🔄 Yükleniyor...</div></div>
+        <div class="footer"><p>📊 Veriler Taj Mod API'sinden alınmaktadır | Her 30 saniyede otomatik yenilenir</p></div>
+    </div>
+    <script>
+        let allServers = [];
+        
+        async function fetchData() {
+            const container = document.getElementById('serversContainer');
+            container.innerHTML = '<div class="loading">🔄 Yükleniyor...</div>';
+            
+            try {
+                const response = await fetch('/api/lobby-list');
+                if (!response.ok) throw new Error('API error');
+                const data = await response.json();
+                
+                allServers = data.servers || [];
+                updateStats(data.total);
+                renderServers(allServers);
+                
+                document.getElementById('lastUpdate').innerHTML = `🕐 ${new Date().toLocaleTimeString('tr-TR')}`;
+            } catch (error) {
+                container.innerHTML = '<div class="error">❌ Bağlantı hatası. Yeniden deneyin.</div>';
+            }
+        }
+        
+        function updateStats(total) {
+            document.getElementById('totalPlayers').innerHTML = total?.players || 0;
+            document.getElementById('totalServers').innerHTML = total?.servers || 0;
+            document.getElementById('fullServers').innerHTML = total?.full || 0;
+        }
+        
+        function decodeServerName(encoded) {
+            if (!encoded) return 'Taj Mod Server';
+            try {
+                let decoded = atob(encoded);
+                decoded = decoded.replace(/<[^>]*>/g, '');
+                return decoded.trim() || 'Taj Mod Server';
+            } catch { return 'Taj Mod Server'; }
+        }
+        
+        function getRegionEmoji(region) {
+            const regions = {'EU':'🇪🇺','US':'🇺🇸','AS':'🇯🇵','RU':'🇷🇺'};
+            return regions[region] || '🌍';
+        }
+        
+        function filterServers() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const region = document.getElementById('regionFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            
+            const filtered = allServers.filter(s => {
+                if (search && !decodeServerName(s.rawName).toLowerCase().includes(search)) return false;
+                if (region !== 'all' && s.region !== region) return false;
+                if (type === 'official' && !s.official) return false;
+                if (type === 'community' && s.official) return false;
+                return true;
+            });
+            renderServers(filtered);
+        }
+        
+        function renderServers(servers) {
+            const container = document.getElementById('serversContainer');
+            if (!servers.length) {
+                container.innerHTML = '<div class="error">🔍 Sunucu bulunamadı</div>';
+                return;
+            }
+            
+            container.innerHTML = servers.map(s => {
+                const name = decodeServerName(s.rawName);
+                const percent = (s.players / s.maxPlayers) * 100;
+                let statusColor = '#00ff41', statusText = '🟢 Açık';
+                if (s.players === 0) { statusColor = '#666'; statusText = '⚫ Boş'; }
+                else if (percent > 90) { statusColor = '#ff4444'; statusText = '🔴 Dolu'; }
+                else if (percent > 50) { statusColor = '#ffaa00'; statusText = '🟡 Orta'; }
+                
+                return `<div class="server-card">
+                    <div class="server-header">
+                        <div class="server-name" title="${name.replace(/"/g, '&quot;')}">${escapeHtml(name)}</div>
+                        ${s.official ? '<span class="official-badge">👑 RESMİ</span>' : '<span class="official-badge" style="background:#2a2a3a;">🏠 TOPLULUK</span>'}
+                    </div>
+                    <div class="server-body">
+                        <div class="player-info">
+                            <div class="player-count"><span class="current" style="color:${statusColor}">${s.players}</span><span class="max">/${s.maxPlayers}</span></div>
+                            <div style="color:${statusColor}">${statusText}</div>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${percent}%;background:${percent>90?'#ff4444':percent>50?'#ffaa00':'#00ff41'}"></div></div>
+                        <div class="server-details">
+                            <div class="detail-item">🗺️ ${s.map}</div>
+                            <div class="detail-item">${getRegionEmoji(s.region)} ${s.region}</div>
+                            ${s.friendlyFire ? '<div class="detail-item">⚔️ FF</div>' : ''}
+                            ${s.whitelist ? '<div class="detail-item">🔒 WL</div>' : ''}
+                            <div class="detail-item">📦 v${s.version}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&')return '&amp;';if(m==='<')return '&lt;';if(m==='>')return '&gt;';return m;}); }
+        
+        fetchData();
+        setInterval(fetchData, 30000);
+    </script>
+</body>
+</html>
