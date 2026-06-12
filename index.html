@@ -195,7 +195,7 @@
 
         .servers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
             gap: 24px;
         }
 
@@ -227,25 +227,25 @@
             border-bottom: 1px solid var(--panel-border);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
             flex-wrap: wrap;
         }
 
-        .server-name {
-            font-weight: 600;
-            font-size: 1rem;
-            line-height: 1.4;
-            word-break: break-word;
+        .server-name-wrapper {
             flex: 1;
-            display: inline-flex;
-            flex-wrap: wrap;
-            align-items: baseline;
-            gap: 4px;
+            min-width: 0;
         }
 
-        /* rendered rich text inside server-name keeps all style inheritance */
-        .server-name span, .server-name b, .server-name i, .server-name u {
+        .server-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .server-name span, .server-name b, .server-name i, .server-name u, .server-name strong, .server-name em {
             display: inline;
         }
 
@@ -258,6 +258,7 @@
             font-size: 10px;
             letter-spacing: 0.4px;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .badge-community {
@@ -269,6 +270,13 @@
             font-weight: 700;
             color: var(--accent-bright);
             white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .flag-icon {
+            font-size: 1.1rem;
+            margin-right: 6px;
+            display: inline-block;
         }
 
         .card-body {
@@ -367,6 +375,7 @@
             font-size: 11px;
             cursor: pointer;
             transition: 0.2s;
+            flex-shrink: 0;
         }
 
         .copy-command:hover {
@@ -489,101 +498,89 @@
 <div id="copyToast" class="toast-msg">✅ Copied connect command</div>
 
 <script>
-    // ---------- Unity Rich Text to HTML converter (full support for SCP:SL tags) ----------
+    // ---------- Robust Unity Rich Text to HTML converter (full SCP:SL support) ----------
     function unityRichTextToHtml(rawText) {
-        if (!rawText) return "Taj Mod Server";
+        if (!rawText || rawText.trim() === "") return "Taj Mod Server";
         
-        // Step 1: encode entities except we'll handle tags after protecting HTML
         let html = rawText;
         
-        // Color tags: <color=#RRGGBB> or <color=red/cyan etc> and closing </color>
+        // Handle color tags - most important for SCP:SL
         html = html.replace(/<color=([^>]+?)>/gi, (match, colorVal) => {
             let colorStyle = colorVal.trim();
             if (colorStyle.startsWith('#')) {
-                // hex color (3/6/8 digit)
-                if (/^#[0-9A-Fa-f]{6}$/.test(colorStyle)) return `<span style="color: ${colorStyle};">`;
-                if (/^#[0-9A-Fa-f]{3}$/.test(colorStyle)) return `<span style="color: ${colorStyle};">`;
                 return `<span style="color: ${colorStyle};">`;
             } else {
-                // try named colors for fallback
-                const colorMap = { red: '#ff4d4d', green: '#4cff9e', blue: '#4d9eff', yellow: '#ffd966', white: '#ffffff', black: '#000000', cyan: '#00ffff', magenta: '#ff44ff' };
-                const lower = colorStyle.toLowerCase();
-                if (colorMap[lower]) return `<span style="color: ${colorMap[lower]};">`;
+                const colorMap = { 
+                    'red': '#ff4d4d', 'green': '#4cff9e', 'blue': '#4d9eff', 
+                    'yellow': '#ffd966', 'white': '#ffffff', 'black': '#000000', 
+                    'cyan': '#00ffff', 'magenta': '#ff44ff', 'orange': '#ffaa44',
+                    'purple': '#b14bff', 'pink': '#ff88cc', 'lime': '#aaff44'
+                };
+                if (colorMap[colorStyle.toLowerCase()]) {
+                    return `<span style="color: ${colorMap[colorStyle.toLowerCase()]};">`;
+                }
                 return `<span style="color: ${colorStyle};">`;
             }
         });
         html = html.replace(/<\/color>/gi, '</span>');
         
-        // Size tags: <size=XX> ... </size>
-        html = html.replace(/<size=(\d+)(?:%?)\s*>/gi, (match, sizeNum) => {
-            let pxSize = Math.min(32, Math.max(11, parseInt(sizeNum) || 14));
-            return `<span style="font-size: ${pxSize}px; display: inline-block;">`;
+        // Size tags
+        html = html.replace(/<size=(\d+)>/gi, (match, sizeNum) => {
+            let pxSize = Math.min(26, Math.max(12, parseInt(sizeNum) || 14));
+            return `<span style="font-size: ${pxSize}px;">`;
         });
         html = html.replace(/<\/size>/gi, '</span>');
         
-        // Bold, Italic, Underline (standard SL tags)
+        // Bold, Italic, Underline
         html = html.replace(/<b>/gi, '<strong>').replace(/<\/b>/gi, '</strong>');
         html = html.replace(/<i>/gi, '<em>').replace(/<\/i>/gi, '</em>');
         html = html.replace(/<u>/gi, '<u>').replace(/<\/u>/gi, '</u>');
         
-        // Also handle lowercase <i> <b> <u> already covered but ensure case-insensitive
-        html = html.replace(/<B>/gi, '<strong>').replace(/<\/B>/gi, '</strong>');
-        html = html.replace(/<I>/gi, '<em>').replace(/<\/I>/gi, '</em>');
-        html = html.replace(/<U>/gi, '<u>').replace(/<\/U>/gi, '</u>');
+        // Remove other Unity-specific tags but keep content
+        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent|margin|space|alpha|font)[^>]*>/gi, '');
         
-        // Remove any other known leftover Unity markup like <smallcaps>, <align>, <quad>, but keep content
-        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent)[^>]*>/gi, '');
+        // Handle any malformed tags - cleanup
+        html = html.replace(/<(\/?(?:color|size|b|i|u))[^>]*>/gi, '<$1>');
         
-        // Clean extra spacing and fix nesting issues
-        html = html.replace(/\s+<span/g, ' <span');
+        // Fix missing closing tags by simple balancing (prevent broken display)
+        let openSpans = (html.match(/<span/g) || []).length;
+        let closeSpans = (html.match(/<\/span>/g) || []).length;
+        for (let i = 0; i < openSpans - closeSpans; i++) html += '</span>';
         
-        // Escape any remaining < or > that are not already valid tags? but we want to keep valid HTML, no raw angle brackets break layout
-        // Safety: prevent XSS by sanitizing anything that could be script
+        let openStrong = (html.match(/<strong/g) || []).length;
+        let closeStrong = (html.match(/<\/strong>/g) || []).length;
+        for (let i = 0; i < openStrong - closeStrong; i++) html += '</strong>';
+        
+        let openEm = (html.match(/<em/g) || []).length;
+        let closeEm = (html.match(/<\/em>/g) || []).length;
+        for (let i = 0; i < openEm - closeEm; i++) html += '</em>';
+        
+        // Final safety - escape any potential XSS
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
-        // Strip any script or event handlers recursively (just in case)
-        const allElements = tempDiv.querySelectorAll('*');
-        for (let el of allElements) {
-            const attrs = el.attributes;
-            for (let attr of attrs) {
-                if (attr.name.toLowerCase().startsWith('on')) {
-                    el.removeAttribute(attr.name);
-                }
-                if (attr.name === 'href' && attr.value.toLowerCase().startsWith('javascript:')) {
-                    el.removeAttribute('href');
-                }
-            }
-        }
-        let cleaned = tempDiv.innerHTML;
-        if (!cleaned.trim()) cleaned = "Taj Mod Server";
+        const sanitized = tempDiv.innerHTML;
         
-        // trim long names visually but keep all html structure
-        if (cleaned.length > 110) {
-            let shortHtml = cleaned.slice(0, 100);
-            let lastTagOpen = shortHtml.lastIndexOf('<');
-            if (lastTagOpen > 60) shortHtml = shortHtml.slice(0, lastTagOpen);
-            cleaned = shortHtml + '…';
-        }
-        return cleaned;
+        return sanitized || "Taj Mod Server";
     }
     
-    // decode server name from base64 and apply unity rich text conversion
+    // Decode base64 and convert to HTML
     function decodeAndRenderServerName(encoded) {
         if (!encoded) return "Taj Mod Server";
         try {
             let decoded = atob(encoded);
-            // clean extra layer of (sometimes includes extra garbage) but preserve tags
-            // also remove any null characters
             decoded = decoded.replace(/\0/g, '');
             if (!decoded.trim()) return "Taj Mod Server";
+            // Remove any invalid control characters
+            decoded = decoded.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
             const rendered = unityRichTextToHtml(decoded);
             return rendered;
         } catch(e) {
+            console.warn("Failed to decode server name:", e);
             return "Taj Mod Server";
         }
     }
 
-    // parse player string like "12/32"
+    // Parse player string
     function parsePlayerCount(playerStr) {
         if (typeof playerStr === 'string' && playerStr.includes('/')) {
             let parts = playerStr.split('/');
@@ -591,6 +588,7 @@
             let max = parseInt(parts[1]) || 64;
             return { current, max };
         }
+        if (typeof playerStr === 'number') return { current: playerStr, max: 64 };
         return { current: 0, max: 64 };
     }
 
@@ -615,12 +613,14 @@
         }
         
         let html = '';
-        servers.forEach((server, idx) => {
+        for (let idx = 0; idx < servers.length; idx++) {
+            const server = servers[idx];
             const richNameHtml = decodeAndRenderServerName(server.info);
             const players = parsePlayerCount(server.players);
             const percent = Math.min(100, (players.current / players.max) * 100);
             const isOfficial = server.officialCode > 0;
             const flag = getFlagByIp(server.ip);
+            
             let statusColor = '#b14bff';
             let statusLabel = 'Online';
             if (players.current === 0) { statusColor = '#6b6580'; statusLabel = 'Empty'; }
@@ -634,12 +634,20 @@
             const whitelist = !!server.whitelist;
             const modded = !!server.modded;
             
+            // Get plain text name for search filtering (preserved for filter but display uses rich)
+            let plainName = "";
+            try {
+                if (server.info) plainName = atob(server.info).replace(/<[^>]*>/g, '').toLowerCase();
+            } catch(e) { plainName = ""; }
+            
             html += `
-                <div class="server-card" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
+                <div class="server-card" data-plain-name="${escapeHtml(plainName)}" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
                     <div class="card-header">
-                        <div class="server-name">
-                            <span style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap;">${flag}</span>
-                            <span style="display:inline;">${richNameHtml}</span>
+                        <div class="server-name-wrapper">
+                            <div class="server-name">
+                                <span class="flag-icon">${flag}</span>
+                                <span>${richNameHtml}</span>
+                            </div>
                         </div>
                         ${isOfficial ? '<span class="badge-official">👑 OFFICIAL</span>' : '<span class="badge-community">🏠 COMMUNITY</span>'}
                     </div>
@@ -654,20 +662,20 @@
                             <div class="progress-fill" style="width:${percent}%; background:${statusColor};"></div>
                         </div>
                         <div class="meta-grid">
-                            <div class="meta-item">🗺️ <strong>Map:</strong> ${displayMap}</div>
-                            <div class="meta-item">📦 <strong>Version:</strong> ${versionDisplay}</div>
+                            <div class="meta-item">🗺️ <strong>Map:</strong> ${escapeHtml(displayMap)}</div>
+                            <div class="meta-item">📦 <strong>Version:</strong> ${escapeHtml(versionDisplay)}</div>
                             ${friendlyFireActive ? '<div class="meta-item">⚔️ <strong>FF:</strong> ON</div>' : ''}
                             ${modded ? '<div class="meta-item">🔧 <strong>Modded:</strong> Yes</div>' : ''}
                             ${whitelist ? '<div class="meta-item">🔒 <strong>Whitelist</strong></div>' : ''}
                         </div>
                         <div class="connect-line">
-                            <span style="font-family: monospace;">🔗 ${server.ip}:${server.port}</span>
-                            <button class="copy-command" data-connect="${connectCmd.replace(/"/g, '&quot;')}">📋 Copy connect</button>
+                            <span style="font-family: monospace;">🔗 ${escapeHtml(server.ip)}:${escapeHtml(server.port)}</span>
+                            <button class="copy-command" data-connect="${escapeHtml(connectCmd)}">📋 Copy connect</button>
                         </div>
                     </div>
                 </div>
             `;
-        });
+        }
         container.innerHTML = html;
         
         // attach copy events
@@ -680,6 +688,18 @@
                     }).catch(() => showToastMessage("Press Ctrl+C to copy"));
                 }
             });
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
         });
     }
     
@@ -709,9 +729,13 @@
         const ffVal = document.getElementById('ffSelect').value;
         
         return cachedServers.filter(server => {
-            const rawName = server.info ? (() => { try { return atob(server.info); } catch(e){ return ""; } })() : "";
-            const plainTextName = rawName.replace(/<[^>]*>/g, '').toLowerCase();
-            if (searchTerm && !plainTextName.includes(searchTerm)) return false;
+            // Get plain text name for searching
+            let plainName = "";
+            try {
+                if (server.info) plainName = atob(server.info).replace(/<[^>]*>/g, '').toLowerCase();
+            } catch(e) { plainName = ""; }
+            
+            if (searchTerm && !plainName.includes(searchTerm)) return false;
             if (typeVal === 'official' && server.officialCode === 0) return false;
             if (typeVal === 'community' && server.officialCode > 0) return false;
             if (ffVal === 'yes' && !server.friendlyFire) return false;
@@ -737,11 +761,8 @@
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             let rawServers = data.servers || [];
-            cachedServers = rawServers.filter(s => {
-                const ver = s.version || '';
-                return ver.includes("1.0.3") || ver === "1.0.3" || ver.startsWith("1.0.3") || (s.officialCode > 0);
-            });
-            if (cachedServers.length === 0 && rawServers.length) cachedServers = rawServers;
+            // Keep all servers, just filter out obviously broken ones
+            cachedServers = rawServers.filter(s => s.ip && s.port);
             updateGlobalStats(cachedServers);
             applyFiltersAndRender();
             const now = new Date();
