@@ -581,6 +581,17 @@
             if (!encoded) return "Taj Mod Server";
             try {
                 let decoded = atob(encoded);
+                decoded = decoded
+                    .replace(/<size[^>]*>/gi, '')
+                    .replace(/<\/size>/gi, '')
+                    .replace(/<smallcaps>/gi, '')
+                    .replace(/<\/smallcaps>/gi, '')
+                    .replace(/<b>/gi, '')
+                    .replace(/<\/b>/gi, '')
+                    .replace(/<i>/gi, '')
+                    .replace(/<\/i>/gi, '')
+                    .replace(/<u>/gi, '')
+                    .replace(/<\/u>/gi, '');
                 decoded = decoded.replace(/&amp;/g, '&');
                 decoded = decoded.replace(/&lt;/g, '<');
                 decoded = decoded.replace(/&gt;/g, '>');
@@ -677,8 +688,8 @@
                 .replace(/</g, '\u0001')
                 .replace(/>/g, '\u0002');
 
-            // <color=#RRGGBB> ... </color>
-            s = s.replace(/\u0001color=#([0-9A-Fa-f]{6})\u0002/gi, '<span style="color:#$1">');
+            // <color=#RRGGBB> or <color=colorname> ... </color>
+            s = s.replace(/\u0001color=(#[0-9A-Fa-f]{3,8}|[a-zA-Z]+)\u0002/gi, '<span style="color:$1">');
             s = s.replace(/\u0001\/color\u0002/gi, '</span>');
 
             // <b> <i> <u> ... </b></i></u>
@@ -698,7 +709,27 @@
             // Any remaining unrecognized tags get escaped to literal text
             s = s.replace(/\u0001/g, '&lt;').replace(/\u0002/g, '&gt;');
 
-            return balanceTags(s);
+            return balanceTags(truncateHtml(s, 60));
+        }
+
+        function truncateHtml(html, maxLen) {
+            let result = '';
+            let count = 0;
+            let i = 0;
+            while (i < html.length && count < maxLen) {
+                if (html[i] === '<') {
+                    const end = html.indexOf('>', i);
+                    if (end === -1) break;
+                    result += html.slice(i, end + 1);
+                    i = end + 1;
+                } else {
+                    result += html[i];
+                    count++;
+                    i++;
+                }
+            }
+            if (i < html.length) result += '…';
+            return result;
         }
 
         function balanceTags(html) {
@@ -770,7 +801,7 @@
                     <div class="server-card" style="animation-delay: ${animDelay}s">
                         <div class="server-header">
                             <div class="server-name" title="${stripTags(serverName).replace(/"/g, '&quot;')}">
-                                ${regionFlag} ${richTextToHtml(serverName.substring(0, 100))}
+                                ${regionFlag} ${richTextToHtml(serverName)}
                             </div>
                             ${isOfficial ? '<span class="official-badge">👑 OFFICIAL</span>' : '<span class="community-badge">🏠 COMMUNITY</span>'}
                         </div>
