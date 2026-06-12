@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Taj Mod · Live Server Browser & Player Tracker</title>
-    <meta name="description" content="Taj Mod SCP: Secret Laboratory live server browser – view active servers, player counts, official/community tags, and real-time updates with full Unity Rich Text support.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Taj Mod | Live Player List & Server Browser</title>
+    <meta name="description" content="Taj Mod SCP: Secret Laboratory live player list, server status, player counts">
     <style>
         * {
             margin: 0;
@@ -12,103 +12,53 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --accent: #b14bff;
-            --accent-bright: #d28bff;
-            --accent-dim: #8a2be2;
-            --bg-deep: #07050d;
-            --bg-mid: #0f0a1f;
-            --panel: rgba(255, 255, 255, 0.03);
-            --panel-border: rgba(177, 75, 255, 0.2);
-            --text-main: #f0e9ff;
-            --text-dim: #9a8fb8;
-            --danger: #ff4d6d;
-            --warn: #ffb14d;
-        }
-
         body {
-            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
-            background: radial-gradient(circle at 20% 0%, #2a0e4d 0%, var(--bg-mid) 35%, var(--bg-deep) 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            color: var(--text-main);
-            line-height: 1.5;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: radial-gradient(circle at 80% 10%, rgba(177, 75, 255, 0.12) 0%, transparent 40%),
-                              radial-gradient(circle at 10% 90%, rgba(138, 43, 226, 0.1) 0%, transparent 45%);
-            pointer-events: none;
-            z-index: 0;
+            font-family: 'Segoe UI', 'Roboto', monospace;
+            background: #0a0c15;
+            color: #e0e0e0;
         }
 
         .header {
-            background: rgba(10, 6, 20, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--panel-border);
-            box-shadow: 0 8px 32px rgba(177, 75, 255, 0.08);
+            background: linear-gradient(135deg, #0d111a 0%, #0a0c15 100%);
+            border-bottom: 2px solid #00ff41;
+            padding: 16px 24px;
             position: sticky;
             top: 0;
             z-index: 100;
-            padding: 18px 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
         .header-content {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 18px;
+            gap: 15px;
         }
 
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .logo-icon {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(145deg, var(--accent), var(--accent-dim));
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            box-shadow: 0 8px 20px rgba(177, 75, 255, 0.5);
-        }
-
-        .logo-text h1 {
-            background: linear-gradient(135deg, #ffffff, var(--accent-bright));
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff41, #00cc33);
             -webkit-background-clip: text;
             background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.3px;
+            color: transparent;
         }
 
-        .logo-text p {
-            font-size: 12px;
-            color: var(--text-dim);
-            letter-spacing: 0.5px;
+        .logo p {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
         }
 
         .stats-panel {
             display: flex;
             gap: 20px;
-            background: var(--panel);
-            backdrop-filter: blur(12px);
-            padding: 10px 24px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 20px;
             border-radius: 40px;
-            border: 1px solid var(--panel-border);
         }
 
         .stat-item {
@@ -117,170 +67,132 @@
 
         .stat-number {
             font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.2;
+            font-weight: bold;
+            color: #00ff41;
+            line-height: 1;
         }
 
         .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            font-weight: 500;
+            font-size: 10px;
+            color: #9ca3af;
         }
 
         .refresh-btn {
-            background: linear-gradient(105deg, var(--accent), var(--accent-dim));
+            background: #00ff41;
+            color: #000;
             border: none;
-            padding: 12px 28px;
+            padding: 8px 20px;
             border-radius: 40px;
-            font-weight: 700;
-            font-size: 14px;
-            color: white;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 5px 18px rgba(177, 75, 255, 0.4);
+            transition: all 0.2s;
+            font-size: 14px;
         }
 
         .refresh-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(177, 75, 255, 0.6);
-            filter: brightness(1.05);
+            background: #00cc33;
+            transform: scale(0.98);
         }
 
         .container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 32px 28px;
-            position: relative;
-            z-index: 2;
+            padding: 24px;
         }
 
-        .filters-bar {
-            background: var(--panel);
-            backdrop-filter: blur(12px);
-            border-radius: 28px;
-            padding: 16px 24px;
-            margin-bottom: 32px;
+        .filters {
             display: flex;
+            gap: 12px;
             flex-wrap: wrap;
-            gap: 15px;
-            border: 1px solid var(--panel-border);
+            margin-bottom: 28px;
+            background: rgba(255,255,255,0.03);
+            padding: 16px 20px;
+            border-radius: 20px;
+            border: 1px solid #1f2937;
         }
 
         .filter-input, .filter-select {
-            background: rgba(20, 12, 36, 0.7);
-            border: 1px solid var(--panel-border);
-            padding: 12px 18px;
+            background: #111827;
+            border: 1px solid #1f2937;
+            color: #e5e7eb;
+            padding: 10px 16px;
             border-radius: 40px;
-            color: white;
             font-size: 14px;
             flex: 1;
-            min-width: 160px;
+            min-width: 140px;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .filter-input:focus, .filter-select:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(177, 75, 255, 0.2);
+            border-color: #00ff41;
         }
 
         .servers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
         }
 
         .server-card {
-            background: linear-gradient(145deg, rgba(30, 18, 55, 0.6), rgba(12, 8, 24, 0.8));
-            backdrop-filter: blur(6px);
-            border-radius: 28px;
-            border: 1px solid var(--panel-border);
-            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+            border-radius: 20px;
             overflow: hidden;
-            animation: fadeUp 0.5s ease forwards;
-            opacity: 0;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            border: 1px solid #1f2937;
+            transition: all 0.25s ease;
         }
 
         .server-card:hover {
-            transform: translateY(-6px);
-            border-color: var(--accent);
-            box-shadow: 0 20px 40px rgba(177, 75, 255, 0.25);
+            transform: translateY(-3px);
+            border-color: #00ff41;
+            box-shadow: 0 12px 24px rgba(0,255,65,0.1);
         }
 
-        .card-header {
-            padding: 18px 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border-bottom: 1px solid var(--panel-border);
+        .server-header {
+            padding: 14px 18px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid #1f2937;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 12px;
             flex-wrap: wrap;
         }
 
-        .server-name-wrapper {
-            flex: 1;
-            min-width: 0;
-        }
-
         .server-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-            line-height: 1.4;
+            font-weight: 700;
+            font-size: 15px;
+            color: #f0f0f0;
             word-break: break-word;
-            overflow-wrap: break-word;
+            flex: 1;
+            line-height: 1.4;
         }
 
-        .server-name span, .server-name b, .server-name i, .server-name u, .server-name strong, .server-name em {
+        /* Rich text styles for server name */
+        .server-name size {
             display: inline;
         }
 
-        .badge-official {
-            background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-            color: #110022;
-            font-weight: 800;
-            padding: 4px 12px;
-            border-radius: 60px;
+        .badge {
             font-size: 10px;
-            letter-spacing: 0.4px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 40px;
             white-space: nowrap;
-            flex-shrink: 0;
+        }
+
+        .badge-official {
+            background: #00ff41;
+            color: #000;
         }
 
         .badge-community {
-            background: rgba(177, 75, 255, 0.15);
-            border: 1px solid rgba(177, 75, 255, 0.4);
-            padding: 4px 12px;
-            border-radius: 60px;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--accent-bright);
-            white-space: nowrap;
-            flex-shrink: 0;
+            background: #2d3748;
+            color: #00ff41;
         }
 
-        .flag-icon {
-            font-size: 1.1rem;
-            margin-right: 6px;
-            display: inline-block;
-        }
-
-        .card-body {
-            padding: 18px 20px;
+        .server-body {
+            padding: 16px 18px;
         }
 
         .player-row {
@@ -291,151 +203,114 @@
         }
 
         .player-count {
-            font-size: 32px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: bold;
         }
 
-        .player-count span {
+        .player-count .current {
+            color: #00ff41;
+        }
+
+        .player-count .max {
             font-size: 18px;
+            color: #6b7280;
+        }
+
+        .status {
+            font-size: 13px;
             font-weight: 500;
-            color: var(--text-dim);
         }
 
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 5px 12px;
-            border-radius: 60px;
-            background: rgba(0,0,0,0.3);
-        }
-
-        .dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 6px currentColor;
-        }
-
-        .progress-container {
-            background: rgba(255,255,255,0.08);
-            border-radius: 12px;
-            height: 8px;
-            margin: 14px 0;
+        .progress-bar {
+            background: #1f2937;
+            border-radius: 20px;
+            height: 6px;
             overflow: hidden;
+            margin-bottom: 16px;
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 12px;
+            border-radius: 20px;
             transition: width 0.4s ease;
         }
 
-        .meta-grid {
+        .server-meta {
             display: flex;
-            flex-wrap: wrap;
             gap: 16px;
-            margin: 16px 0 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #1f2937;
             font-size: 12px;
-            color: var(--text-dim);
-            border-top: 1px solid var(--panel-border);
-            padding-top: 14px;
+            color: #9ca3af;
         }
 
         .meta-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
-        .connect-line {
-            background: rgba(0,0,0,0.45);
-            border-radius: 60px;
-            padding: 8px 14px;
+        .connection-info {
+            background: rgba(0,0,0,0.3);
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-top: 14px;
+            font-family: monospace;
+            font-size: 11px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            margin-top: 12px;
-            border: 1px solid var(--panel-border);
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .copy-command {
-            background: var(--accent);
+        .copy-btn {
+            background: #1f2937;
             border: none;
-            padding: 6px 14px;
-            border-radius: 40px;
-            color: white;
-            font-weight: 700;
-            font-size: 11px;
+            color: #00ff41;
+            padding: 4px 10px;
+            border-radius: 20px;
             cursor: pointer;
-            transition: 0.2s;
-            flex-shrink: 0;
+            font-size: 11px;
+            transition: all 0.2s;
         }
 
-        .copy-command:hover {
-            background: var(--accent-bright);
-            transform: scale(1.02);
+        .copy-btn:hover {
+            background: #2d3748;
         }
 
-        .loading-placeholder, .error-placeholder {
-            grid-column: 1 / -1;
+        .loading, .error {
             text-align: center;
-            padding: 70px 20px;
-            background: var(--panel);
-            border-radius: 48px;
+            padding: 60px;
+            font-size: 18px;
+            color: #9ca3af;
         }
 
-        .spinner {
-            width: 42px;
-            height: 42px;
-            border: 3px solid rgba(177,75,255,0.2);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
+        .error {
+            color: #ff4444;
+            background: rgba(255,68,68,0.1);
+            border-radius: 20px;
         }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         .footer {
             text-align: center;
-            padding: 36px 20px;
-            color: var(--text-dim);
-            border-top: 1px solid var(--panel-border);
+            padding: 30px;
+            color: #4b5563;
+            border-top: 1px solid #1f2937;
             margin-top: 40px;
             font-size: 12px;
         }
 
-        .toast-msg {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-            color: white;
-            padding: 12px 28px;
-            border-radius: 60px;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.25s, transform 0.25s;
-            pointer-events: none;
-            z-index: 1000;
-            font-size: 14px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        .last-update {
+            text-align: center;
+            font-size: 11px;
+            color: #4b5563;
+            margin-top: 20px;
         }
 
-        .toast-msg.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        @media (max-width: 780px) {
+        @media (max-width: 768px) {
             .servers-grid {
                 grid-template-columns: 1fr;
             }
@@ -450,394 +325,291 @@
     </style>
 </head>
 <body>
-
-<div class="header">
-    <div class="header-content">
-        <div class="logo-area">
-            <div class="logo-icon">🎮</div>
-            <div class="logo-text">
-                <h1>Taj Mod Server Browser</h1>
-                <p>SCP: Secret Laboratory — Live Server List</p>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>🎮 Taj Mod Server Browser</h1>
+                <p>SCP: Secret Laboratory - Live Player Tracker</p>
             </div>
-        </div>
-        <div class="stats-panel">
-            <div class="stat-item"><div class="stat-number" id="totalPlayersLive">0</div><div class="stat-label">Players</div></div>
-            <div class="stat-item"><div class="stat-number" id="totalServersLive">0</div><div class="stat-label">Servers</div></div>
-            <div class="stat-item"><div class="stat-number" id="officialCountLive">0</div><div class="stat-label">Official</div></div>
-        </div>
-        <button class="refresh-btn" id="manualRefreshBtn">⟳ Refresh Now</button>
-    </div>
-</div>
-
-<div class="container">
-    <div class="filters-bar">
-        <input type="text" id="searchQuery" class="filter-input" placeholder="🔍 Filter by server name...">
-        <select id="typeSelect" class="filter-select">
-            <option value="all">🎮 All Servers</option>
-            <option value="official">👑 Official Only</option>
-            <option value="community">🏠 Community Only</option>
-        </select>
-        <select id="ffSelect" class="filter-select">
-            <option value="all">⚔️ Friendly Fire (Any)</option>
-            <option value="yes">✅ Friendly Fire ON</option>
-            <option value="no">❌ Friendly Fire OFF</option>
-        </select>
-    </div>
-
-    <div id="serversGrid" class="servers-grid">
-        <div class="loading-placeholder"><div class="spinner"></div>Loading live server data from Taj Mod API...</div>
-    </div>
-    <div class="last-update" style="text-align:center; margin-top: 24px; font-size:12px; color:var(--text-dim)" id="timestampFooter">Last update: --</div>
-</div>
-
-<div class="footer">
-    <p>📊 Data fetched from official Taj Mod API · Auto-refresh every 30 seconds</p>
-    <p style="margin-top: 6px;">© 2026 Taj Mod Community · Not affiliated with Northwood Studios</p>
-</div>
-
-<div id="copyToast" class="toast-msg">✅ Copied connect command</div>
-
-<script>
-    // ---------- SAFE Unity Rich Text to HTML converter (handles all edge cases) ----------
-    function safeString(input) {
-        if (input === null || input === undefined) return '';
-        return String(input);
-    }
-    
-    function unityRichTextToHtml(rawText) {
-        let input = safeString(rawText);
-        if (input.trim() === "") return "Taj Mod Server";
-        
-        let html = input;
-        
-        // Handle color tags safely
-        html = html.replace(/<color=([^>]+?)>/gi, function(match, colorVal) {
-            let colorStyle = safeString(colorVal).trim();
-            if (colorStyle.startsWith('#')) {
-                if (/^#[0-9A-Fa-f]{3,8}$/.test(colorStyle)) {
-                    return `<span style="color: ${colorStyle};">`;
-                }
-                return `<span style="color: ${colorStyle};">`;
-            } else {
-                const colorMap = { 
-                    'red': '#ff4d4d', 'green': '#4cff9e', 'blue': '#4d9eff', 
-                    'yellow': '#ffd966', 'white': '#ffffff', 'black': '#000000', 
-                    'cyan': '#00ffff', 'magenta': '#ff44ff', 'orange': '#ffaa44',
-                    'purple': '#b14bff', 'pink': '#ff88cc', 'lime': '#aaff44',
-                    'grey': '#888888', 'gray': '#888888'
-                };
-                if (colorMap[colorStyle.toLowerCase()]) {
-                    return `<span style="color: ${colorMap[colorStyle.toLowerCase()]};">`;
-                }
-                return `<span style="color: ${colorStyle};">`;
-            }
-        });
-        html = html.replace(/<\/color>/gi, '</span>');
-        
-        // Size tags
-        html = html.replace(/<size=(\d+)>/gi, function(match, sizeNum) {
-            let pxSize = Math.min(26, Math.max(12, parseInt(sizeNum) || 14));
-            return `<span style="font-size: ${pxSize}px;">`;
-        });
-        html = html.replace(/<\/size>/gi, '</span>');
-        
-        // Bold, Italic, Underline
-        html = html.replace(/<b>/gi, '<strong>').replace(/<\/b>/gi, '</strong>');
-        html = html.replace(/<i>/gi, '<em>').replace(/<\/i>/gi, '</em>');
-        html = html.replace(/<u>/gi, '<u>').replace(/<\/u>/gi, '</u>');
-        
-        // Remove other Unity-specific tags
-        html = html.replace(/<[\/]?(?:smallcaps|quad|align|material|indent|margin|space|alpha|font|link|a)[^>]*>/gi, '');
-        
-        // Remove any remaining angle brackets that might break HTML
-        html = html.replace(/<(?![\/]?(?:span|strong|em|u)>)/g, '&lt;');
-        html = html.replace(/(?<!<[\/]?(?:span|strong|em|u))>/g, '&gt;');
-        
-        // Balance tags
-        let openSpans = (html.match(/<span/g) || []).length;
-        let closeSpans = (html.match(/<\/span>/g) || []).length;
-        for (let i = 0; i < openSpans - closeSpans; i++) html += '</span>';
-        
-        let openStrong = (html.match(/<strong/g) || []).length;
-        let closeStrong = (html.match(/<\/strong>/g) || []).length;
-        for (let i = 0; i < openStrong - closeStrong; i++) html += '</strong>';
-        
-        let openEm = (html.match(/<em/g) || []).length;
-        let closeEm = (html.match(/<\/em>/g) || []).length;
-        for (let i = 0; i < openEm - closeEm; i++) html += '</em>';
-        
-        let openU = (html.match(/<u(?![^>]*\/>)/g) || []).length;
-        let closeU = (html.match(/<\/u>/g) || []).length;
-        for (let i = 0; i < openU - closeU; i++) html += '</u>';
-        
-        return html || "Taj Mod Server";
-    }
-    
-    // Decode base64 safely
-    function decodeAndRenderServerName(encoded) {
-        let encodedStr = safeString(encoded);
-        if (!encodedStr) return "Taj Mod Server";
-        try {
-            let decoded = atob(encodedStr);
-            decoded = safeString(decoded);
-            decoded = decoded.replace(/\0/g, '');
-            if (!decoded.trim()) return "Taj Mod Server";
-            decoded = decoded.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-            const rendered = unityRichTextToHtml(decoded);
-            return rendered;
-        } catch(e) {
-            console.warn("Failed to decode server name:", e);
-            return "Taj Mod Server";
-        }
-    }
-    
-    // Get plain text version for search
-    function getPlainServerName(encoded) {
-        let encodedStr = safeString(encoded);
-        if (!encodedStr) return "";
-        try {
-            let decoded = atob(encodedStr);
-            decoded = safeString(decoded);
-            return decoded.replace(/<[^>]*>/g, '').trim().toLowerCase();
-        } catch(e) {
-            return "";
-        }
-    }
-
-    // Parse player string safely
-    function parsePlayerCount(playerStr) {
-        let str = safeString(playerStr);
-        if (str.includes('/')) {
-            let parts = str.split('/');
-            let current = parseInt(parts[0]) || 0;
-            let max = parseInt(parts[1]) || 64;
-            return { current, max };
-        }
-        let num = parseInt(str);
-        if (!isNaN(num)) return { current: num, max: 64 };
-        return { current: 0, max: 64 };
-    }
-
-    function getFlagByIp(ip) {
-        let ipStr = safeString(ip);
-        if (!ipStr) return '🌍';
-        if (ipStr.startsWith('51.75') || ipStr.startsWith('57.128') || ipStr.startsWith('89.144') || ipStr.startsWith('83.168')) return '🇪🇺';
-        if (ipStr.startsWith('45.136')) return '🇷🇺';
-        if (ipStr.startsWith('69.9') || ipStr.startsWith('23.139')) return '🇺🇸';
-        if (ipStr.startsWith('160.222')) return '🇦🇺';
-        return '🌐';
-    }
-    
-    function escapeHtml(str) {
-        let s = safeString(str);
-        return s.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    let cachedServers = [];
-    let refreshInterval = null;
-    let isFetching = false;
-    
-    function renderServerCards(servers) {
-        const container = document.getElementById('serversGrid');
-        if (!servers.length) {
-            container.innerHTML = `<div class="loading-placeholder" style="color:var(--text-dim);">🔍 No servers match your filters. Try adjusting search or wait for refresh.</div>`;
-            return;
-        }
-        
-        let html = '';
-        for (let idx = 0; idx < servers.length; idx++) {
-            const server = servers[idx];
-            const richNameHtml = decodeAndRenderServerName(server.info);
-            const players = parsePlayerCount(server.players);
-            const percent = players.max > 0 ? Math.min(100, (players.current / players.max) * 100) : 0;
-            const isOfficial = server.officialCode > 0;
-            const flag = getFlagByIp(server.ip);
-            
-            let statusColor = '#b14bff';
-            let statusLabel = 'Online';
-            if (players.current === 0) { statusColor = '#6b6580'; statusLabel = 'Empty'; }
-            else if (percent >= 90) { statusColor = '#ff4d6d'; statusLabel = 'Full'; }
-            else if (percent >= 55) { statusColor = '#ffb14d'; statusLabel = 'Busy'; }
-            
-            const versionDisplay = server.version ? safeString(server.version) : "1.0.3";
-            const connectCmd = `connect ${escapeHtml(safeString(server.ip))}:${escapeHtml(safeString(server.port))}`;
-            const displayMap = (server.map && server.map !== "Unknown") ? escapeHtml(safeString(server.map)) : "Surface/Lobby";
-            const friendlyFireActive = !!server.friendlyFire;
-            const whitelist = !!server.whitelist;
-            const modded = !!server.modded;
-            
-            html += `
-                <div class="server-card" style="animation-delay: ${Math.min(idx * 0.02, 0.3)}s">
-                    <div class="card-header">
-                        <div class="server-name-wrapper">
-                            <div class="server-name">
-                                <span class="flag-icon">${flag}</span>
-                                <span>${richNameHtml}</span>
-                            </div>
-                        </div>
-                        ${isOfficial ? '<span class="badge-official">👑 OFFICIAL</span>' : '<span class="badge-community">🏠 COMMUNITY</span>'}
-                    </div>
-                    <div class="card-body">
-                        <div class="player-row">
-                            <div class="player-count">${players.current}<span> / ${players.max}</span></div>
-                            <div class="status-badge" style="color:${statusColor}; border:1px solid ${statusColor}30; background:${statusColor}10;">
-                                <span class="dot" style="background:${statusColor}; box-shadow:0 0 6px ${statusColor};"></span> ${statusLabel}
-                            </div>
-                        </div>
-                        <div class="progress-container">
-                            <div class="progress-fill" style="width:${percent}%; background:${statusColor};"></div>
-                        </div>
-                        <div class="meta-grid">
-                            <div class="meta-item">🗺️ <strong>Map:</strong> ${displayMap}</div>
-                            <div class="meta-item">📦 <strong>Version:</strong> ${escapeHtml(versionDisplay)}</div>
-                            ${friendlyFireActive ? '<div class="meta-item">⚔️ <strong>FF:</strong> ON</div>' : ''}
-                            ${modded ? '<div class="meta-item">🔧 <strong>Modded:</strong> Yes</div>' : ''}
-                            ${whitelist ? '<div class="meta-item">🔒 <strong>Whitelist</strong></div>' : ''}
-                        </div>
-                        <div class="connect-line">
-                            <span style="font-family: monospace; overflow: hidden; text-overflow: ellipsis;">🔗 ${escapeHtml(safeString(server.ip))}:${escapeHtml(safeString(server.port))}</span>
-                            <button class="copy-command" data-connect="${connectCmd.replace(/"/g, '&quot;')}">📋 Copy connect</button>
-                        </div>
-                    </div>
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalPlayers">0</div>
+                    <div class="stat-label">Total Players</div>
                 </div>
-            `;
-        }
-        container.innerHTML = html;
-        
-        document.querySelectorAll('.copy-command').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                const cmd = this.getAttribute('data-connect');
-                if (cmd) {
-                    navigator.clipboard.writeText(cmd).then(function() {
-                        showToastMessage("Copied: " + cmd);
-                    }).catch(function() {
-                        showToastMessage("Press Ctrl+C to copy");
-                    });
-                }
-            });
-        });
-    }
-    
-    function showToastMessage(msg) {
-        const toast = document.getElementById('copyToast');
-        toast.textContent = msg || "✅ Copied!";
-        toast.classList.add('show');
-        setTimeout(function() { toast.classList.remove('show'); }, 2200);
-    }
-    
-    function updateGlobalStats(servers) {
-        let totalPlayers = 0;
-        let officialCount = 0;
-        for (let i = 0; i < servers.length; i++) {
-            const s = servers[i];
-            const pl = parsePlayerCount(s.players);
-            totalPlayers += pl.current;
-            if (s.officialCode > 0) officialCount++;
-        }
-        document.getElementById('totalPlayersLive').innerText = totalPlayers;
-        document.getElementById('totalServersLive').innerText = servers.length;
-        document.getElementById('officialCountLive').innerText = officialCount;
-    }
-    
-    function getFilteredServers() {
-        const searchTerm = document.getElementById('searchQuery').value.toLowerCase().trim();
-        const typeVal = document.getElementById('typeSelect').value;
-        const ffVal = document.getElementById('ffSelect').value;
-        
-        const filtered = [];
-        for (let i = 0; i < cachedServers.length; i++) {
-            const server = cachedServers[i];
-            const plainName = getPlainServerName(server.info);
+                <div class="stat-item">
+                    <div class="stat-number" id="totalServers">0</div>
+                    <div class="stat-label">Active Servers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="officialServers">0</div>
+                    <div class="stat-label">Official Servers</div>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="fetchServers()">⟳ Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="filters">
+            <input type="text" class="filter-input" id="searchInput" placeholder="🔍 Search server name..." onkeyup="filterServers()">
+            <select class="filter-select" id="typeFilter" onchange="filterServers()">
+                <option value="all">🎮 All Servers</option>
+                <option value="official">👑 Official Only</option>
+                <option value="community">🏠 Community Only</option>
+            </select>
+            <select class="filter-select" id="ffFilter" onchange="filterServers()">
+                <option value="all">⚔️ All (Friendly Fire)</option>
+                <option value="yes">✅ Friendly Fire ON</option>
+                <option value="no">❌ Friendly Fire OFF</option>
+            </select>
+        </div>
+
+        <div id="serversContainer" class="servers-grid">
+            <div class="loading">🔄 Loading server data from Taj Mod API...</div>
+        </div>
+        <div class="last-update" id="lastUpdate">Last update: --</div>
+    </div>
+
+    <div class="footer">
+        <p>📊 Live data from official Taj Mod API | Auto-refreshes every 30 seconds</p>
+        <p style="margin-top: 8px;">© 2026 Taj Mod Community | Not affiliated with Northwood Studios</p>
+    </div>
+
+    <script>
+        let allServers = [];
+
+        // Convert color tags to HTML spans with proper styling
+        function convertColorTags(text) {
+            if (!text) return "Taj Mod Server";
             
-            if (searchTerm && !plainName.includes(searchTerm)) continue;
-            if (typeVal === 'official' && server.officialCode === 0) continue;
-            if (typeVal === 'community' && server.officialCode > 0) continue;
-            if (ffVal === 'yes' && !server.friendlyFire) continue;
-            if (ffVal === 'no' && server.friendlyFire) continue;
+            // Convert <color=#HEX>text</color> to <span style="color: #HEX">text</span>
+            let result = text.replace(/<color=#([0-9a-fA-F]{6})>([^<]*)<\/color>/gi, '<span style="color: #$1;">$2</span>');
+            result = result.replace(/<color=#([0-9a-fA-F]{3})>([^<]*)<\/color>/gi, '<span style="color: #$1;">$2</span>');
             
-            filtered.push(server);
-        }
-        return filtered;
-    }
-    
-    function applyFiltersAndRender() {
-        const filtered = getFilteredServers();
-        renderServerCards(filtered);
-        updateGlobalStats(cachedServers);
-    }
-    
-    async function fetchServerList() {
-        if (isFetching) return;
-        isFetching = true;
-        const container = document.getElementById('serversGrid');
-        container.innerHTML = '<div class="loading-placeholder"><div class="spinner"></div>Fetching live servers from Taj network...</div>';
-        
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(function() { controller.abort(); }, 8000);
+            // Convert <color=red/green/blue/yellow etc> to span
+            const colorNames = {
+                'red': '#ff0000',
+                'green': '#00ff00',
+                'blue': '#0000ff',
+                'yellow': '#ffff00',
+                'white': '#ffffff',
+                'black': '#000000',
+                'purple': '#800080',
+                'orange': '#ffa500',
+                'pink': '#ffc0cb',
+                'lime': '#00ff41',
+                'cyan': '#00ffff'
+            };
             
-            const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1', {
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            
-            const data = await response.json();
-            const rawServers = data.servers || [];
-            
-            cachedServers = [];
-            for (let i = 0; i < rawServers.length; i++) {
-                const s = rawServers[i];
-                if (s.ip && s.port) {
-                    cachedServers.push(s);
-                }
+            for (const [name, hex] of Object.entries(colorNames)) {
+                const regex = new RegExp(`<color=${name}>([^<]*)</color>`, 'gi');
+                result = result.replace(regex, `<span style="color: ${hex};">$1</span>`);
             }
             
-            updateGlobalStats(cachedServers);
-            applyFiltersAndRender();
+            // Convert <size=XX%> to <span style="font-size: XX%">
+            result = result.replace(/<size=(\d+)%>([^<]*)<\/size>/gi, '<span style="font-size: $1%;">$2</span>');
+            result = result.replace(/<size=(\d+)>([^<]*)<\/size>/gi, '<span style="font-size: $1px;">$2</span>');
             
-            const now = new Date();
-            document.getElementById('timestampFooter').innerHTML = '🕐 Last updated: ' + now.toLocaleTimeString() + ' · Auto-refresh every 30s';
-        } catch (err) {
-            console.error('Fetch error:', err);
-            container.innerHTML = '<div class="error-placeholder" style="color: #ff9090;">❌ Failed to load server list: ' + escapeHtml(err.message) + '<br><br>🔄 Check connection or try again later.</div>';
-        } finally {
-            isFetching = false;
+            // Convert bold tags
+            result = result.replace(/<b>([^<]*)<\/b>/gi, '<strong>$1</strong>');
+            result = result.replace(/<i>([^<]*)<\/i>/gi, '<em>$1</em>');
+            result = result.replace(/<u>([^<]*)<\/u>/gi, '<u>$1</u>');
+            
+            return result;
         }
-    }
-    
-    function manualRefresh() {
-        fetchServerList();
-    }
-    
-    let debounceTimer;
-    function handleSearch() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function() { applyFiltersAndRender(); }, 200);
-    }
-    
-    function bindEvents() {
-        document.getElementById('searchQuery').addEventListener('input', handleSearch);
-        document.getElementById('typeSelect').addEventListener('change', function() { applyFiltersAndRender(); });
-        document.getElementById('ffSelect').addEventListener('change', function() { applyFiltersAndRender(); });
-        document.getElementById('manualRefreshBtn').addEventListener('click', function() { manualRefresh(); });
-    }
-    
-    function init() {
-        bindEvents();
-        fetchServerList();
-        if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(function() { fetchServerList(); }, 30000);
-    }
-    
-    init();
-</script>
+
+        function decodeAndFormatServerName(encoded) {
+            if (!encoded) return "Taj Mod Server";
+            try {
+                let decoded = atob(encoded);
+                // Apply color and size conversions
+                let formatted = convertColorTags(decoded);
+                return formatted || "Taj Mod Server";
+            } catch (e) {
+                return "Taj Mod Server";
+            }
+        }
+
+        // For plain text search (strip HTML tags)
+        function getPlainServerName(encoded) {
+            if (!encoded) return "Taj Mod Server";
+            try {
+                let decoded = atob(encoded);
+                // Strip all HTML tags for search
+                let plain = decoded.replace(/<[^>]*>/g, '');
+                return plain.trim() || "Taj Mod Server";
+            } catch (e) {
+                return "Taj Mod Server";
+            }
+        }
+
+        function parsePlayers(playersStr) {
+            if (typeof playersStr === 'string' && playersStr.includes('/')) {
+                const [current, max] = playersStr.split('/');
+                return { current: parseInt(current) || 0, max: parseInt(max) || 64 };
+            }
+            return { current: 0, max: 64 };
+        }
+
+        async function fetchServers() {
+            const container = document.getElementById('serversContainer');
+            container.innerHTML = '<div class="loading">🔄 Fetching live server data...</div>';
+            
+            try {
+                const response = await fetch('https://cs.mistaken.pl/lobbylist.php?format=json&version=2&minimal=1');
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                allServers = data.servers || [];
+                
+                updateStats();
+                renderServers(allServers);
+                
+                const now = new Date();
+                document.getElementById('lastUpdate').innerHTML = `🕐 Last updated: ${now.toLocaleTimeString()}`;
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                container.innerHTML = `<div class="error">❌ Failed to load server data: ${error.message}<br><br>🔄 Please check your connection and try again.</div>`;
+            }
+        }
+
+        function updateStats() {
+            let totalPlayers = 0;
+            let officialCount = 0;
+            
+            allServers.forEach(server => {
+                const players = parsePlayers(server.players);
+                totalPlayers += players.current;
+                if (server.officialCode > 0) officialCount++;
+            });
+            
+            document.getElementById('totalPlayers').innerHTML = totalPlayers;
+            document.getElementById('totalServers').innerHTML = allServers.length;
+            document.getElementById('officialServers').innerHTML = officialCount;
+        }
+
+        function filterServers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const ffFilter = document.getElementById('ffFilter').value;
+            
+            let filtered = allServers.filter(server => {
+                const plainName = getPlainServerName(server.info).toLowerCase();
+                
+                if (searchTerm && !plainName.includes(searchTerm)) return false;
+                
+                if (typeFilter === 'official' && server.officialCode === 0) return false;
+                if (typeFilter === 'community' && server.officialCode > 0) return false;
+                
+                if (ffFilter === 'yes' && !server.friendlyFire) return false;
+                if (ffFilter === 'no' && server.friendlyFire) return false;
+                
+                return true;
+            });
+            
+            renderServers(filtered);
+        }
+
+        function getRegionFlag(ip) {
+            const regions = {
+                '51.75': '🇪🇺', '57.128': '🇪🇺', '89.144': '🇪🇺', '83.168': '🇪🇺',
+                '45.136': '🇷🇺', '69.9': '🇺🇸', '23.139': '🇺🇸', '160.222': '🇦🇺'
+            };
+            for (const [prefix, flag] of Object.entries(regions)) {
+                if (ip.startsWith(prefix)) return flag;
+            }
+            return '🌍';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert(`✓ Copied: ${text}`);
+        }
+
+        function renderServers(servers) {
+            const container = document.getElementById('serversContainer');
+            
+            if (servers.length === 0) {
+                container.innerHTML = '<div class="error">🔍 No servers match your filters. Try adjusting your search.</div>';
+                return;
+            }
+            
+            container.innerHTML = servers.map(server => {
+                const formattedName = decodeAndFormatServerName(server.info);
+                const plainName = getPlainServerName(server.info);
+                const players = parsePlayers(server.players);
+                const percentage = (players.current / players.max) * 100;
+                const isOfficial = server.officialCode > 0;
+                const regionFlag = getRegionFlag(server.ip);
+                
+                let statusColor = '#00ff41';
+                let statusText = '🟢 Online';
+                if (players.current === 0) {
+                    statusColor = '#6b7280';
+                    statusText = '⚫ Empty';
+                } else if (percentage > 90) {
+                    statusColor = '#ff4444';
+                    statusText = '🔴 Full';
+                } else if (percentage > 50) {
+                    statusColor = '#ffaa00';
+                    statusText = '🟡 Busy';
+                }
+                
+                let barColor = '#00ff41';
+                if (percentage > 90) barColor = '#ff4444';
+                else if (percentage > 50) barColor = '#ffaa00';
+                
+                const connectString = `connect ${server.ip}:${server.port}`;
+                
+                return `
+                    <div class="server-card">
+                        <div class="server-header">
+                            <div class="server-name" title="${escapeHtml(plainName)}">
+                                ${regionFlag} ${formattedName}
+                            </div>
+                            ${isOfficial ? '<span class="badge badge-official">👑 OFFICIAL</span>' : '<span class="badge badge-community">🏠 COMMUNITY</span>'}
+                        </div>
+                        <div class="server-body">
+                            <div class="player-row">
+                                <div class="player-count">
+                                    <span class="current" style="color: ${statusColor}">${players.current}</span>
+                                    <span class="max">/${players.max}</span>
+                                </div>
+                                <div class="status" style="color: ${statusColor}">${statusText}</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%; background: ${barColor}"></div>
+                            </div>
+                            <div class="server-meta">
+                                <div class="meta-item">🗺️ ${server.map || 'Unknown'}</div>
+                                <div class="meta-item">📦 v${server.version || '1.0.3'}</div>
+                                ${server.friendlyFire ? '<div class="meta-item">⚔️ Friendly Fire ON</div>' : ''}
+                                ${server.modded ? '<div class="meta-item">🔧 Modded</div>' : ''}
+                                ${server.whitelist ? '<div class="meta-item">🔒 Whitelist</div>' : ''}
+                            </div>
+                            <div class="connection-info">
+                                <span>🔗 ${server.ip}:${server.port}</span>
+                                <button class="copy-btn" onclick="copyToClipboard('${connectString}')">📋 Copy Connect</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        fetchServers();
+        setInterval(fetchServers, 30000);
+    </script>
 </body>
 </html>
